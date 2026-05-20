@@ -83,8 +83,12 @@ Page({
           wx.showToast({ title: '支付成功', icon: 'success' });
           that.loadOrders();
         },
-        fail() {
-          wx.showToast({ title: '支付取消', icon: 'none' });
+        fail: () => {
+          // 用户取消支付 → 撤销订单
+          api.put(`/orders/${id}/cancel`).then(() => {
+            wx.showToast({ title: '订单已撤销', icon: 'none' });
+            that.loadOrders();
+          });
         },
       });
     }).catch((err) => {

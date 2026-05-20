@@ -5,6 +5,8 @@ const config = require('./config');
 
 // 初始化 COS（云托管环境自动获取临时凭证）
 const { initCOS } = require('./utils/cos');
+
+/**
  * 初始化数据库：创建数据库（如不存在）、执行建表 SQL、填充种子数据
  */
 async function initDatabase() {

@@ -3,6 +3,9 @@
 
 FROM node:24-alpine
 
+# CA 证书（云托管内部 API 调用必需）
+RUN apk add --no-cache ca-certificates
+
 # 腾讯云镜像源加速
 RUN npm config set registry https://mirrors.cloud.tencent.com/npm/
 

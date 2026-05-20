@@ -1,0 +1,14 @@
+<view class="card" bindtap="onTap">
+  <image class="img" src="{{product.images ? product.images[0] || product.images : '/assets/placeholder.png'}}" mode="aspectFill" lazy-load />
+  <view class="info">
+    <text class="name">{{product.name}}</text>
+    <text class="spec" wx:if="{{product.specification}}">{{product.specification}}</text>
+    <view class="bottom">
+      <view class="price-box">
+        <text class="price">{{product.price}}</text>
+        <text class="sales" wx:if="{{product.sales}}">已售 {{product.sales}}</text>
+      </view>
+      <view class="add-btn" catchtap="onAddCart">+</view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,73 @@
+<view class="page">
+  <!-- 收货地址 -->
+  <view class="card address-card" bindtap="onSelectAddress">
+    <block wx:if="{{address}}">
+      <view class="addr-info">
+        <text class="addr-name">{{address.name}}  {{address.phone}}</text>
+        <text class="addr-detail">{{address.province}}{{address.city}}{{address.district}} {{address.detail}}</text>
+      </view>
+      <text class="arrow">›</text>
+    </block>
+    <block wx:else>
+      <text class="no-addr">请选择收货地址</text>
+      <text class="arrow">›</text>
+    </block>
+  </view>
+
+  <!-- 商品清单 -->
+  <view class="card">
+    <view class="item" wx:for="{{items}}" wx:key="id">
+      <image class="item-img" src="{{item.image}}" mode="aspectFill" />
+      <view class="item-info">
+        <text class="item-name">{{item.product_name}}</text>
+        <view class="item-bottom">
+          <text class="item-price">{{item.price}}</text>
+          <text class="item-qty">×{{item.quantity}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 优惠券 -->
+  <view class="card row" bindtap="onSelectCoupon">
+    <text>优惠券</text>
+    <view class="row-right">
+      <text class="coupon-text">{{couponText}}</text>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 备注 -->
+  <view class="card row">
+    <text>备注</text>
+    <input class="remark-input" value="{{remark}}" placeholder="选填" bindinput="onRemarkInput" />
+  </view>
+
+  <!-- 金额明细 -->
+  <view class="card amount-card">
+    <view class="amount-row">
+      <text>商品总额</text>
+      <text>{{totalAmount}}</text>
+    </view>
+    <view class="amount-row">
+      <text>运费</text>
+      <text>免运费</text>
+    </view>
+    <view class="amount-row" wx:if="{{discountAmount > 0}}">
+      <text>优惠</text>
+      <text class="discount">-¥{{discountAmount}}</text>
+    </view>
+    <view class="amount-row pay-row">
+      <text>实付金额</text>
+      <text class="pay-amount">{{payAmount}}</text>
+    </view>
+  </view>
+
+  <view style="height: 120rpx;"></view>
+
+  <!-- 提交按钮 -->
+  <view class="bottom-bar">
+    <text class="pay-text">实付: {{payAmount}}</text>
+    <view class="submit-btn {{submitting ? 'disabled' : ''}}" bindtap="onSubmit">{{submitting ? '提交中...' : '提交订单'}}</view>
+  </view>
+</view>

@@ -1,0 +1,188 @@
+erDiagram
+    users ||--o{ addresses : has
+    users ||--o{ carts : has
+    users ||--o{ orders : places
+    users ||--o{ prescriptions : uploads
+    users ||--o{ user_coupons : receives
+    users ||--o{ medication_reminders : sets
+    users ||--o{ reviews : writes
+
+    categories ||--o{ categories : parent_of
+    categories ||--o{ products : contains
+
+    products ||--o{ carts : in
+    products ||--o{ order_items : part_of
+    products ||--o{ reviews : reviewed
+
+    orders ||--o{ order_items : contains
+    orders ||--o| coupons : uses
+
+    coupons ||--o{ user_coupons : assigned_to
+
+    admin_users ||--o{ prescriptions : reviews
+
+    users {
+        int id PK
+        string openid UK
+        string nickname
+        string avatar_url
+        string phone
+        string member_level "normal"
+        int points "0"
+        datetime created_at
+        datetime updated_at
+    }
+
+    addresses {
+        int id PK
+        int user_id FK
+        string name
+        string phone
+        string province
+        string city
+        string district
+        string detail
+        int is_default "0"
+        datetime created_at
+    }
+
+    categories {
+        int id PK
+        string name
+        int parent_id FK "nullable"
+        string icon
+        int sort "0"
+        datetime created_at
+    }
+
+    products {
+        int id PK
+        int category_id FK
+        string name
+        string images "JSON array"
+        string specification
+        string brand
+        string manufacturer
+        float price
+        float member_price "nullable"
+        int stock "0"
+        int is_prescription "0"
+        string usage_dosage
+        string contraindications
+        string approval_number
+        string status "on"
+        int sales "0"
+        datetime created_at
+        datetime updated_at
+    }
+
+    carts {
+        int id PK
+        int user_id FK
+        int product_id FK
+        int quantity "1"
+    }
+
+    orders {
+        int id PK
+        string order_no UK
+        int user_id FK
+        string address_snapshot "JSON"
+        string status "pending"
+        float total_amount
+        float discount_amount "0"
+        float freight "0"
+        float pay_amount
+        int coupon_id FK "nullable"
+        string payment_method "wechat"
+        datetime paid_at "nullable"
+        datetime created_at
+        datetime updated_at
+    }
+
+    order_items {
+        int id PK
+        int order_id FK
+        int product_id
+        string product_name
+        string product_image
+        float price
+        int quantity
+        float subtotal
+    }
+
+    prescriptions {
+        int id PK
+        int user_id FK
+        string images "JSON array"
+        string status "pending"
+        int reviewer_id FK "nullable"
+        string review_remark "nullable"
+        datetime reviewed_at "nullable"
+        datetime created_at
+    }
+
+    coupons {
+        int id PK
+        string name
+        string type "full_reduction"
+        float value
+        float min_amount "0"
+        int total_count "nullable"
+        int received_count "0"
+        datetime valid_from
+        datetime valid_to
+        string status "active"
+        datetime created_at
+    }
+
+    user_coupons {
+        int id PK
+        int user_id FK
+        int coupon_id FK
+        string status "unused"
+        datetime used_at "nullable"
+        datetime created_at
+    }
+
+    medication_reminders {
+        int id PK
+        int user_id FK
+        string drug_name
+        string dosage
+        string frequency
+        string time
+        string start_date
+        string end_date
+        int is_active "1"
+        datetime created_at
+    }
+
+    reviews {
+        int id PK
+        int user_id FK
+        int order_id FK
+        int product_id FK
+        int rating "1-5"
+        string content
+        string images "JSON array"
+        datetime created_at
+    }
+
+    banners {
+        int id PK
+        string title
+        string image_url
+        string link_url "nullable"
+        int sort "0"
+        string status "active"
+        datetime created_at
+    }
+
+    admin_users {
+        int id PK
+        string username UK
+        string password_hash
+        string role "admin"
+        datetime created_at
+    }

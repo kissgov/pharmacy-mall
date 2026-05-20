@@ -1,0 +1,38 @@
+<view class="page">
+  <!-- 搜索栏 -->
+  <view class="search-bar" bindtap="onSearch">
+    <view class="search-input">
+      <text class="icon">🔍</text>
+      <text class="placeholder">搜索药品、症状</text>
+    </view>
+  </view>
+
+  <!-- Banner 轮播 -->
+  <swiper wx:if="{{banners.length}}" class="banner-swiper" indicator-dots autoplay circular interval="3000">
+    <swiper-item wx:for="{{banners}}" wx:key="id">
+      <image src="{{item.image_url}}" mode="aspectFill" class="banner-img" data-link="{{item.link_url}}" bindtap="onBannerTap" />
+    </swiper-item>
+  </swiper>
+
+  <!-- 分类入口 -->
+  <view class="category-grid">
+    <view class="category-item" wx:for="{{categories}}" wx:key="id" bindtap="onCategoryTap">
+      <image src="{{item.icon || '/assets/category-default.png'}}" class="cat-icon" mode="aspectFit" />
+      <text class="cat-name">{{item.name}}</text>
+    </view>
+  </view>
+
+  <!-- 热门推荐 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">热门推荐</text>
+      <text class="section-more" bindtap="onSearch">更多 ›</text>
+    </view>
+    <view class="product-list">
+      <product-card wx:for="{{hotProducts}}" wx:key="id" product="{{item}}" />
+    </view>
+  </view>
+
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+</view>

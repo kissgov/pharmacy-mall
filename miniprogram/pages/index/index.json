@@ -1,0 +1,8 @@
+{
+  "usingComponents": {
+    "product-card": "/components/product-card/index"
+  },
+  "navigationBarTitleText": "药房商城",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
+}

@@ -1,0 +1,16 @@
+{
+  "name": "pharmacy-mall-api",
+  "description": "药店网上商城后端API服务",
+  "containerPort": 3000,
+  "envParams": {
+    "PORT": "3000",
+    "JWT_SECRET": "pharmacy_mall_jwt_secret_2024",
+    "DB_PATH": "/app/data/pharmacy.db"
+  },
+  "cpu": 0.25,
+  "mem": 0.5,
+  "minNum": 1,
+  "maxNum": 5,
+  "policyType": "cpu",
+  "policyThreshold": 60
+}

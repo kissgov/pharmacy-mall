@@ -1,0 +1,19 @@
+<view class="page">
+  <view class="upload-btn" bindtap="onUpload">上传处方</view>
+
+  <view wx:if="{{prescriptions.length}}" class="list">
+    <view class="rx-card" wx:for="{{prescriptions}}" wx:key="id">
+      <image class="rx-img" src="{{item.images[0] || ''}}" mode="aspectFill" />
+      <view class="rx-info">
+        <text class="rx-date">{{item.created_at}}</text>
+        <text class="rx-status" style="color: {{item.statusInfo.color}}">{{item.statusInfo.text}}</text>
+        <text wx:if="{{item.review_remark}}" class="rx-remark">原因: {{item.review_remark}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:else class="empty">
+    <text class="empty-icon">📄</text>
+    <text class="empty-text">暂无处方</text>
+  </view>
+</view>

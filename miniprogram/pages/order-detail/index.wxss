@@ -1,0 +1,36 @@
+.page { background: #f5f5f5; min-height: 100vh; padding-bottom: 120rpx; }
+.status-card {
+  padding: 32rpx 24rpx; color: #fff;
+  display: flex; flex-direction: column;
+}
+.status-text { font-size: 36rpx; font-weight: bold; }
+.tracking { font-size: 24rpx; margin-top: 8rpx; opacity: 0.9; }
+.card { background: #fff; padding: 24rpx; margin: 16rpx; border-radius: 12rpx; }
+.card-title { font-size: 28rpx; font-weight: bold; color: #333; margin-bottom: 12rpx; display: block; }
+.addr-text { font-size: 26rpx; color: #666; }
+.item { display: flex; padding: 16rpx 0; border-bottom: 1rpx solid #f5f5f5; }
+.item:last-child { border-bottom: none; }
+.item-img { width: 100rpx; height: 100rpx; border-radius: 8rpx; background: #f5f5f5; }
+.item-info { flex: 1; margin-left: 16rpx; display: flex; flex-direction: column; justify-content: space-between; }
+.item-name { font-size: 26rpx; color: #333; }
+.item-bottom { display: flex; justify-content: space-between; font-size: 24rpx; color: #666; }
+.item-price { font-size: 28rpx; font-weight: bold; color: #e53e3e; }
+.amount-row { display: flex; justify-content: space-between; padding: 12rpx 0; font-size: 26rpx; color: #666; }
+.discount { color: #e53e3e; }
+.pay-row { border-top: 1rpx solid #f0f0f0; padding-top: 16rpx; margin-top: 8rpx; }
+.pay-amount { font-size: 34rpx; font-weight: bold; color: #e53e3e; }
+.info-card { padding: 8rpx 24rpx; }
+.info-row { display: flex; justify-content: space-between; padding: 16rpx 0; font-size: 24rpx; color: #666; border-bottom: 1rpx solid #f5f5f5; }
+.info-row:last-child { border-bottom: none; }
+.bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  display: flex; justify-content: flex-end; gap: 16rpx;
+  padding: 16rpx 24rpx; padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+  background: #fff; box-shadow: 0 -2rpx 12rpx rgba(0,0,0,0.06);
+}
+.btn {
+  padding: 14rpx 36rpx; border-radius: 36rpx; font-size: 28rpx;
+}
+.btn.cancel { border: 1rpx solid #ccc; color: #999; }
+.btn.pay { background: #07c160; color: #fff; }
+.loading { text-align: center; padding: 200rpx 0; color: #999; }

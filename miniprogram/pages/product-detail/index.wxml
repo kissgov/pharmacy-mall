@@ -1,0 +1,79 @@
+<scroll-view wx:if="{{product}}" class="page" scroll-y>
+  <!-- 图片轮播 -->
+  <swiper class="img-swiper" indicator-dots bindchange="onSwiperChange">
+    <swiper-item wx:for="{{images}}" wx:key="*this">
+      <image src="{{item}}" mode="aspectFill" class="img" data-index="{{index}}" bindtap="onPreviewImage" />
+    </swiper-item>
+  </swiper>
+  <text class="img-counter" wx:if="{{images.length > 1}}">{{currentImageIndex + 1}}/{{images.length}}</text>
+
+  <!-- 基本信息 -->
+  <view class="info-card">
+    <view class="price-row">
+      <text class="price">{{product.price}}</text>
+      <text wx:if="{{product.member_price}}" class="member-price">{{product.member_price}}</text>
+    </view>
+    <text class="name">{{product.name}}</text>
+    <view class="meta">
+      <text wx:if="{{product.specification}}">{{product.specification}}</text>
+      <text wx:if="{{product.brand}}">品牌: {{product.brand}}</text>
+      <text wx:if="{{product.approval_number}}">批准文号: {{product.approval_number}}</text>
+      <text>已售 {{product.sales || 0}} 件</text>
+    </view>
+  </view>
+
+  <!-- 用法用量 -->
+  <view wx:if="{{product.usage_dosage}}" class="card">
+    <view class="card-title">用法用量</view>
+    <text class="card-text">{{product.usage_dosage}}</text>
+  </view>
+
+  <!-- 禁忌 -->
+  <view wx:if="{{product.contraindications}}" class="card warn-card">
+    <view class="card-title warn-title">⚠️ 禁忌</view>
+    <text class="card-text">{{product.contraindications}}</text>
+  </view>
+
+  <!-- 评价 -->
+  <view class="card">
+    <view class="card-title">用户评价 ({{reviewCount}})</view>
+    <view wx:if="{{reviews.length}}">
+      <view class="review-item" wx:for="{{reviews}}" wx:key="id">
+        <view class="review-header">
+          <image class="avatar" src="{{item.avatar_url || '/assets/default-avatar.png'}}" mode="aspectFill" />
+          <text class="nickname">{{item.nickname || '匿名用户'}}</text>
+          <view class="stars">
+            <text wx:for="{{item.rating}}" wx:key="*this">⭐</text>
+          </view>
+        </view>
+        <text class="review-content" wx:if="{{item.content}}">{{item.content}}</text>
+        <text class="review-date">{{item.created_at}}</text>
+      </view>
+    </view>
+    <view wx:else class="no-review">暂无评价</view>
+  </view>
+
+  <view style="height: 120rpx;"></view>
+</scroll-view>
+
+<!-- 底部操作栏 -->
+<view wx:if="{{product}}" class="bottom-bar">
+  <view class="btn outline" bindtap="onAction" data-type="cart">加入购物车</view>
+  <view class="btn solid" bindtap="onAction" data-type="buy">立即购买</view>
+</view>
+
+<!-- 数量选择弹窗 -->
+<view wx:if="{{showQtyPopup}}" class="popup-mask" bindtap="onClosePopup">
+  <view class="popup" catchtap="">
+    <text class="popup-title">选择数量</text>
+    <view class="qty-row">
+      <view class="qty-btn" bindtap="onQtyMinus">-</view>
+      <text class="qty-num">{{quantity}}</text>
+      <view class="qty-btn" bindtap="onQtyPlus">+</view>
+    </view>
+    <view class="popup-confirm" bindtap="onConfirmAction">确定</view>
+  </view>
+</view>
+
+<!-- 加载/空状态 -->
+<view wx:if="{{!product}}" class="loading">加载中...</view>

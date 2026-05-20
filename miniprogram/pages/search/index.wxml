@@ -1,0 +1,46 @@
+<view class="page">
+  <!-- 搜索栏 -->
+  <view class="search-header">
+    <view class="search-box">
+      <text class="search-icon">🔍</text>
+      <input class="search-input" value="{{keyword}}" placeholder="搜索药品、症状" focus bindinput="onInput" bindconfirm="onSearch" confirm-type="search" />
+      <text wx:if="{{keyword}}" class="clear-btn" bindtap="onClear">✕</text>
+    </view>
+    <text class="cancel" bindtap="onCancel">取消</text>
+  </view>
+
+  <!-- 搜索中 -->
+  <view wx:if="{{searched}}">
+    <view wx:if="{{results.length}}" class="results">
+      <product-card wx:for="{{results}}" wx:key="id" product="{{item}}" />
+    </view>
+    <view wx:else class="empty">未找到相关商品</view>
+  </view>
+
+  <!-- 未搜索 -->
+  <view wx:else>
+    <!-- 搜索历史 -->
+    <view wx:if="{{history.length}}" class="section">
+      <view class="section-header">
+        <text class="title">搜索历史</text>
+        <text class="clear" bindtap="onClearHistory">清除</text>
+      </view>
+      <view class="tag-list">
+        <text class="tag" wx:for="{{history}}" wx:key="*this" data-word="{{item}}" bindtap="onHistoryTap">{{item}}</text>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-header">
+        <text class="title">热门搜索</text>
+      </view>
+      <view class="tag-list">
+        <text class="tag hot">感冒药</text>
+        <text class="tag hot">退烧药</text>
+        <text class="tag hot">止咳</text>
+        <text class="tag hot">口罩</text>
+        <text class="tag hot">维生素</text>
+      </view>
+    </view>
+  </view>
+</view>

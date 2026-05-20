@@ -1,0 +1,67 @@
+<view class="page">
+  <view wx:if="{{reminders.length}}" class="list">
+    <view class="reminder-card" wx:for="{{reminders}}" wx:key="id">
+      <view class="reminder-info">
+        <text class="drug-name">{{item.drug_name}}</text>
+        <text class="drug-detail" wx:if="{{item.dosage}}">剂量: {{item.dosage}}</text>
+        <text class="drug-detail" wx:if="{{item.frequency}}">频次: {{item.frequency}}</text>
+        <text class="drug-detail" wx:if="{{item.time}}">时间: {{item.time}}</text>
+      </view>
+      <view class="reminder-actions">
+        <switch checked="{{item.is_active}}" data-id="{{item.id}}" bindchange="onToggleActive" color="#07c160" />
+        <text class="action" data-id="{{item.id}}" bindtap="onEdit">编辑</text>
+        <text class="action" data-id="{{item.id}}" bindtap="onDelete">删除</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:else class="empty">
+    <text class="empty-icon">⏰</text>
+    <text class="empty-text">暂无用药提醒</text>
+  </view>
+
+  <view class="add-btn" bindtap="onAdd">新增提醒</view>
+
+  <!-- 弹窗 -->
+  <view wx:if="{{showPopup}}" class="popup-mask" bindtap="onClosePopup">
+    <view class="popup" catchtap="">
+      <text class="popup-title">{{editId ? '编辑提醒' : '新增提醒'}}</text>
+      <view class="form-item">
+        <text class="label">药品名</text>
+        <input class="input" value="{{form.drug_name}}" placeholder="请输入" data-field="drug_name" bindinput="onInput" />
+      </view>
+      <view class="form-item">
+        <text class="label">剂量</text>
+        <input class="input" value="{{form.dosage}}" placeholder="如: 1片" data-field="dosage" bindinput="onInput" />
+      </view>
+      <view class="form-item">
+        <text class="label">频次</text>
+        <picker mode="selector" range="{{frequencies}}" value="{{form.frequency}}" bindchange="onFrequencyChange">
+          <text>{{form.frequency}}</text>
+        </picker>
+      </view>
+      <view class="form-item">
+        <text class="label">时间</text>
+        <picker mode="time" value="{{form.time}}" bindchange="onTimeChange">
+          <text>{{form.time}}</text>
+        </picker>
+      </view>
+      <view class="form-item">
+        <text class="label">开始日期</text>
+        <picker mode="date" value="{{form.start_date}}" bindchange="onDateChange" data-field="start_date">
+          <text>{{form.start_date || '请选择'}}</text>
+        </picker>
+      </view>
+      <view class="form-item">
+        <text class="label">结束日期</text>
+        <picker mode="date" value="{{form.end_date}}" bindchange="onDateChange" data-field="end_date">
+          <text>{{form.end_date || '请选择'}}</text>
+        </picker>
+      </view>
+      <view class="popup-btns">
+        <view class="btn cancel" bindtap="onClosePopup">取消</view>
+        <view class="btn save" bindtap="onSave">保存</view>
+      </view>
+    </view>
+  </view>
+</view>

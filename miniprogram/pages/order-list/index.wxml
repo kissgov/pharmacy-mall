@@ -1,0 +1,44 @@
+<view class="page">
+  <!-- Tab -->
+  <scroll-view class="tabs" scroll-x>
+    <view
+      class="tab {{activeTab === index ? 'active' : ''}}"
+      wx:for="{{tabs}}" wx:key="key"
+      data-index="{{index}}"
+      bindtap="onTabTap"
+    >{{item.label}}</view>
+  </scroll-view>
+
+  <!-- 订单列表 -->
+  <view wx:if="{{orders.length}}" class="list">
+    <view class="order-card" wx:for="{{orders}}" wx:key="id">
+      <view class="order-header" data-id="{{item.id}}" bindtap="onOrderDetail">
+        <text class="order-no">订单号: {{item.order_no}}</text>
+        <text class="order-status" style="color: {{item.statusColor}}">{{item.statusText}}</text>
+      </view>
+      <view class="order-items" data-id="{{item.id}}" bindtap="onOrderDetail">
+        <image class="order-item-img" src="{{item.items[0].product_image || ''}}" mode="aspectFill" />
+        <view class="order-item-info">
+          <text class="order-item-name">{{item.items[0].product_name}}</text>
+          <text class="order-item-meta">共{{item.item_count}}件</text>
+        </view>
+        <text class="order-amount">{{item.pay_amount}}</text>
+      </view>
+      <view class="order-footer">
+        <text class="order-date">{{item.created_at}}</text>
+        <view class="order-actions">
+          <view wx:if="{{item.status === 'pending'}}" class="action-btn cancel" data-id="{{item.id}}" bindtap="onCancel">取消</view>
+          <view wx:if="{{item.status === 'pending'}}" class="action-btn pay" data-id="{{item.id}}" bindtap="onPay">付款</view>
+          <view wx:if="{{item.status === 'shipped'}}" class="action-btn pay" data-id="{{item.id}}" bindtap="onConfirm">确认收货</view>
+          <view class="action-btn detail" data-id="{{item.id}}" bindtap="onOrderDetail">详情</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:else class="empty">
+    <text class="empty-icon">📋</text>
+    <text class="empty-text">暂无订单</text>
+  </view>
+</view>

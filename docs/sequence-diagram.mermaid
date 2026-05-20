@@ -1,0 +1,85 @@
+sequenceDiagram
+    participant MP as 小程序
+    participant WX as 微信服务器
+    participant API as Express API
+    participant DB as SQLite
+
+    MP->>WX: wx.login()
+    WX-->>MP: code
+    MP->>API: POST /api/auth/login { code }
+    API->>WX: code2Session(code)
+    WX-->>API: { openid, session_key }
+    API->>DB: SELECT * FROM users WHERE openid=?
+    alt 新用户
+        DB-->>API: null
+        API->>DB: INSERT INTO users(openid) VALUES(?)
+    end
+    API->>API: jwt.sign({ userId, openid })
+    API-->>MP: { code:200, data:{ token, user } }
+    MP->>MP: wx.setStorageSync('token', token)
+
+---
+
+sequenceDiagram
+    participant MP as 小程序
+    participant API as Express API
+    participant DB as SQLite
+
+    MP->>API: GET /api/cart
+    API->>DB: SELECT carts JOIN products
+    DB-->>API: cart items
+    API-->>MP: [{ id, product, quantity }]
+
+    MP->>MP: 用户勾选商品，点击结算
+    MP->>API: GET /api/addresses
+    API-->>MP: [{ address }]
+
+    MP->>API: GET /api/coupons/mine?status=unused
+    API-->>MP: [{ userCoupon }]
+
+    MP->>MP: 选择地址、优惠券，确认金额
+    MP->>API: POST /api/orders { address_id, cart_item_ids[], coupon_id? }
+
+    API->>DB: BEGIN TRANSACTION
+    API->>DB: SELECT products WHERE id IN (...) FOR CHECK
+    alt 库存不足
+        API->>DB: ROLLBACK
+        API-->>MP: { code:400, message:"库存不足" }
+    end
+    API->>DB: INSERT INTO orders(...)
+    API->>DB: INSERT INTO order_items(...)
+    API->>DB: UPDATE products SET stock=stock-quantity
+    API->>DB: DELETE FROM carts WHERE id IN (...)
+    API->>DB: UPDATE user_coupons SET status='used'
+    API->>DB: COMMIT
+    API-->>MP: { code:200, data:{ order } }
+
+    MP->>API: PUT /api/orders/:id/pay
+    API->>DB: UPDATE orders SET status='paid', paid_at=NOW()
+    API-->>MP: { code:200, data:{ order } }
+
+---
+
+sequenceDiagram
+    participant MP as 小程序
+    participant API as Express API
+    participant Admin as 管理后台
+    participant DB as SQLite
+
+    MP->>API: POST /api/upload (处方图片)
+    API-->>MP: { url }
+
+    MP->>API: POST /api/prescriptions { images[], product_id? }
+    API->>DB: INSERT INTO prescriptions(status='pending')
+    API-->>MP: { code:200, data:{ prescription } }
+
+    Admin->>API: GET /api/admin/prescriptions?status=pending
+    API->>DB: SELECT * FROM prescriptions WHERE status='pending'
+    API-->>Admin: [{ prescription }]
+
+    Admin->>API: PUT /api/admin/prescriptions/:id/review { status:'approved', remark:'' }
+    API->>DB: UPDATE prescriptions SET status='approved', reviewer_id=?, reviewed_at=NOW()
+    API-->>Admin: { code:200 }
+
+    MP->>API: GET /api/prescriptions
+    API-->>MP: [{ prescription status:'approved' }]

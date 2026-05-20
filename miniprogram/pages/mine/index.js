@@ -1,0 +1,59 @@
+const api = require('../../utils/api');
+const { ensureLogin } = require('../../utils/auth');
+
+Page({
+  data: {
+    userInfo: null,
+    orderCounts: { pending: 0, paid: 0, shipped: 0, completed: 0 },
+  },
+
+  onShow() {
+    ensureLogin().then((user) => {
+      this.setData({ userInfo: user || {} });
+      this.loadOrderCounts();
+    });
+  },
+
+  loadOrderCounts() {
+    ['pending', 'paid', 'shipped', 'completed'].forEach((status) => {
+      api.get('/orders', { status, page_size: 1 }).then((data) => {
+        this.setData({ [`orderCounts.${status}`]: data.total || 0 });
+      }).catch(() => {});
+    });
+  },
+
+  onOrderTap(e) {
+    const { status } = e.currentTarget.dataset;
+    wx.navigateTo({ url: `/pages/order-list/index?status=${status}` });
+  },
+
+  onNavTo(e) {
+    const { url } = e.currentTarget.dataset;
+    wx.navigateTo({ url });
+  },
+
+  onContact() {
+    // button open-type="contact" 自动处理
+  },
+
+  onClearCache() {
+    wx.showModal({
+      title: '清除缓存',
+      content: '确定清除本地缓存吗？',
+      success: (res) => {
+        if (res.confirm) {
+          wx.clearStorageSync();
+          wx.showToast({ title: '已清除', icon: 'success' });
+        }
+      },
+    });
+  },
+
+  onAbout() {
+    wx.showModal({
+      title: '关于我们',
+      content: '药房商城 v1.0.0\n在线购药，方便快捷',
+      showCancel: false,
+    });
+  },
+});

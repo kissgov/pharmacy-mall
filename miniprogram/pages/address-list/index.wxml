@@ -1,0 +1,23 @@
+<view class="page">
+  <view wx:if="{{addresses.length}}" class="list">
+    <view class="addr-card" wx:for="{{addresses}}" wx:key="id" data-index="{{index}}" bindtap="onSelect">
+      <view class="addr-header">
+        <text class="addr-name">{{item.name}}  {{item.phone}}</text>
+        <text wx:if="{{item.is_default}}" class="default-tag">默认</text>
+      </view>
+      <text class="addr-detail">{{item.province}}{{item.city}}{{item.district}} {{item.detail}}</text>
+      <view class="addr-actions">
+        <text data-id="{{item.id}}" bindtap="onSetDefault">{{item.is_default ? '' : '设为默认 | '}}</text>
+        <text data-id="{{item.id}}" bindtap="onEdit">编辑</text>
+        <text> | </text>
+        <text data-id="{{item.id}}" bindtap="onDelete">删除</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:else class="empty">
+    <text class="empty-text">暂无收货地址</text>
+  </view>
+
+  <view class="add-btn" bindtap="onAdd">新增收货地址</view>
+</view>

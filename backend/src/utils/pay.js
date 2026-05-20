@@ -14,13 +14,12 @@ const MCH_ID = process.env.MCH_ID || '1512811311';
  * @param {object} paybody - 支付参数
  */
 function callPay(action, paybody) {
-  return new Promise((resolve, reject) => {
+  const doCall = new Promise((resolve) => {
     const body = JSON.stringify(paybody);
     const req = http.request({
       hostname: 'api.weixin.qq.com',
       path: `/_/pay/${action}`,
       method: 'POST',
-      timeout: 15000, // 15 秒超时，防止 nginx 502
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(body),
@@ -29,19 +28,13 @@ function callPay(action, paybody) {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
-        // 检查是否返回了 HTML 错误页（如 502/503）
         if (data.startsWith('<') || data.startsWith('\r') || data.startsWith('\n')) {
           console.error(`[支付] API 返回非 JSON 响应 (${res.statusCode}):`, data.slice(0, 200));
           return resolve({ return_code: 'FAIL', return_msg: '支付服务暂不可用' });
         }
         try { resolve(JSON.parse(data)); }
-        catch (_) { resolve({ return_code: 'FAIL', return_msg: '支付返回异常: ' + data.slice(0, 50) }); }
+        catch (_) { resolve({ return_code: 'FAIL', return_msg: '支付返回异常' }); }
       });
-    });
-    req.on('timeout', () => {
-      req.destroy();
-      console.error('[支付] 请求超时');
-      resolve({ return_code: 'FAIL', return_msg: '支付服务超时，请稍后重试' });
     });
     req.on('error', (err) => {
       console.error('[支付] 请求失败:', err.message);
@@ -50,6 +43,16 @@ function callPay(action, paybody) {
     req.write(body);
     req.end();
   });
+
+  // 硬超时：10 秒内无响应则返回失败（覆盖连接阶段挂死场景）
+  const timeout = new Promise((resolve) => {
+    setTimeout(() => {
+      console.error('[支付] 请求硬超时（10s）');
+      resolve({ return_code: 'FAIL', return_msg: '支付服务超时，请稍后重试' });
+    }, 10000);
+  });
+
+  return Promise.race([doCall, timeout]);
 }
 
 /**
@@ -79,7 +82,7 @@ async function unifiedOrder(opts) {
       path: '/api/pay/callback',
     },
   };
-  return callPay('unifiedOrder', payreq);
+  return callPay('unifiedorder', payreq);
 }
 
 /**

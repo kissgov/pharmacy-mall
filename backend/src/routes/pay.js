@@ -50,11 +50,15 @@ router.post('/unified', authUser, async (req, res) => {
 
     console.log('[支付] 统一下单结果:', JSON.stringify(result));
 
-    // API 返回结构：{ errcode, errmsg, respdata: { return_code, result_code, payment } }
-    const resp = result.respdata || result;
-    if (resp.return_code === 'SUCCESS' && resp.result_code === 'SUCCESS') {
+    // 兼容两种返回格式：
+    // 格式1: { errcode: 0, payment: { timeStamp, ... } }
+    // 格式2: { errcode: 0, respdata: { return_code, result_code, payment } }
+    const payment = result.payment || (result.respdata && result.respdata.payment);
+    const returnCode = result.return_code || (result.respdata && result.respdata.return_code);
+    const resultCode = result.result_code || (result.respdata && result.respdata.result_code);
+
+    if (payment) {
       // 直接透传 payment 对象给小程序 wx.requestPayment
-      const payment = resp.payment || {};
       res.json(success({
         timeStamp: payment.timeStamp || '',
         nonceStr: payment.nonceStr || '',
@@ -63,8 +67,11 @@ router.post('/unified', authUser, async (req, res) => {
         paySign: payment.paySign || '',
         order_no: order.order_no,
       }, '预下单成功'));
+    } else if (returnCode === 'FAIL' || result.return_code === 'FAIL') {
+      const errMsg = result.return_msg || result.errmsg || '支付预下单失败';
+      res.json(error(500, errMsg));
     } else {
-      const errMsg = resp.return_msg || result.return_msg || result.errmsg || '支付预下单失败';
+      const errMsg = result.return_msg || result.errmsg || '支付预下单失败';
       res.json(error(500, errMsg));
     }
   } catch (err) {

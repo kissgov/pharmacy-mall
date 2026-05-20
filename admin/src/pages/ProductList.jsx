@@ -95,8 +95,9 @@ export default function ProductList() {
                   <TableRow key={p.id}>
                     <TableCell>
                       {getImage(p.images) ? (
-                        <img src={getImage(p.images)} alt="" style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', background: '#f5f5f5' }} />
-                      ) : <Box sx={{ width: 60, height: 60, borderRadius: 1, bgcolor: '#f5f5f5' }} />}
+                        <img src={getImage(p.images)} alt="" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', background: '#f5f5f5' }} />
+                      ) : null}
+                      <Box sx={{ width: 60, height: 60, borderRadius: 1, bgcolor: '#f5f5f5', display: getImage(p.images) ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>💊</Box>
                     </TableCell>
                     <TableCell>{p.name}</TableCell>
                     <TableCell>{p.category_name || '-'}</TableCell>

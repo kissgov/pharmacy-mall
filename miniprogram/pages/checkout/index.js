@@ -99,13 +99,28 @@ Page({
     }
 
     api.post('/orders', data).then((order) => {
-      this.setData({ submitting: false });
-      // 模拟支付
-      api.put(`/orders/${order.id}/pay`).then(() => {
-        wx.showToast({ title: '下单成功', icon: 'success' });
-        setTimeout(() => {
-          wx.redirectTo({ url: `/pages/order-detail/index?id=${order.id}` });
-        }, 1000);
+      // 调起微信支付
+      api.post('/pay/unified', { order_id: order.id }).then((payParams) => {
+        wx.requestPayment({
+          timeStamp: payParams.timeStamp,
+          nonceStr: payParams.nonceStr,
+          package: payParams.package,
+          signType: payParams.signType || 'MD5',
+          paySign: payParams.paySign,
+          success() {
+            wx.showToast({ title: '支付成功', icon: 'success' });
+            setTimeout(() => {
+              wx.redirectTo({ url: `/pages/order-detail/index?id=${order.id}` });
+            }, 1000);
+          },
+          fail(err) {
+            wx.showToast({ title: '支付取消', icon: 'none' });
+          },
+        });
+      }).catch((err) => {
+        wx.showToast({ title: err.message || '支付失败', icon: 'none' });
+      }).finally(() => {
+        this.setData({ submitting: false });
       });
     }).catch((err) => {
       this.setData({ submitting: false });

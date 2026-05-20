@@ -18,6 +18,7 @@ router.use('/reviews', require('./reviews'));
 router.use('/reminders', require('./reminders'));
 router.use('/upload', require('./upload'));
 router.use('/banners', require('./banners'));
+router.use('/pay', require('./pay'));
 
 // 管理后台路由
 router.use('/admin', require('./admin'));

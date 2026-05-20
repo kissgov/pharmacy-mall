@@ -78,6 +78,10 @@ async function start() {
   try {
     await initDatabase();
 
+    // 初始化 COS（云托管环境自动获取临时凭证）
+    const { initCOS } = require('./utils/cos');
+    initCOS(); // 异步初始化，不阻塞启动
+
     // 数据库初始化完成后加载 app（路由模块会触发模型导入）
     const app = require('./app');
 

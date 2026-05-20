@@ -71,7 +71,7 @@ async function unifiedOrder(opts) {
     body: opts.body || '药店商城订单',
     out_trade_no: opts.outTradeNo,
     sub_mch_id: MCH_ID,
-    total_fee: opts.totalFee,
+    total_fee: Math.round(Number(opts.totalFee) || 0),
     trade_type: 'JSAPI',        // 小程序固定 JSAPI
     openid: opts.openid,
     spbill_create_ip: opts.clientIp || '127.0.0.1',

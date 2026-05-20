@@ -38,6 +38,15 @@ router.post('/unified', authUser, async (req, res) => {
     const envId = req.headers['x-wx-env'] || '';
     const serviceName = req.headers['x-wx-service'] || 'pharmary-mall-api';
 
+    // 金额校验（元 → 分），防止 NaN/0 导致微信报"缺少参数"
+    const totalFee = Math.round(Number(order.pay_amount || 0) * 100);
+    if (!totalFee || totalFee <= 0) {
+      console.error('[支付] 金额无效:', { order_id, pay_amount: order.pay_amount, totalFee });
+      return res.json(error(400, '订单金额无效'));
+    }
+
+    console.log('[支付] 统一下单请求:', { outTradeNo: order.order_no, totalFee, openid: openid.slice(0, 10) + '...' });
+
     const result = await pay.unifiedOrder({
       openid,
       clientIp,
@@ -45,7 +54,7 @@ router.post('/unified', authUser, async (req, res) => {
       serviceName,
       outTradeNo: order.order_no,
       body: '药店商城订单',
-      totalFee: Math.round(order.pay_amount * 100), // 元转分
+      totalFee,
     });
 
     console.log('[支付] 统一下单结果:', JSON.stringify(result));

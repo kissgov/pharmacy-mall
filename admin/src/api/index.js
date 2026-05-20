@@ -89,10 +89,10 @@ export const uploadAPI = {
     const formData = new FormData();
     formData.append('file', file);
     const token = localStorage.getItem('admin_token');
+    // 不指定 Content-Type，让浏览器自动带 boundary
     return axios
-      .post('/api/upload', formData, {
+      .post('/api/upload?type=products', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       })

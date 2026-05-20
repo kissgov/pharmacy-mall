@@ -11,7 +11,12 @@ const api = require('./api');
  */
 async function silentLogin() {
   try {
-    const user = await api.post('/auth/login', {});
+    const data = await api.post('/auth/login', {});
+    // 登录接口返回 { token, user }，需要解构
+    const user = data.user || data;
+    if (data.token) {
+      wx.setStorageSync('token', data.token);
+    }
     const app = getApp();
     app.globalData.userInfo = user;
     wx.setStorageSync('userInfo', user);

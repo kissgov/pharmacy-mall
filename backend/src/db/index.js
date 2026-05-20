@@ -16,6 +16,14 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   charset: 'utf8mb4',
+  // MySQL DECIMAL 默认返回字符串，转为 JS Number
+  typeCast: function (field, next) {
+    if (field.type === 'NEWDECIMAL' || field.type === 'DECIMAL') {
+      const value = field.string();
+      return value === null ? null : Number(value);
+    }
+    return next();
+  },
 });
 
 module.exports = pool;

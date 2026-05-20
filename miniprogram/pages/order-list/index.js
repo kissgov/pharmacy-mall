@@ -84,11 +84,8 @@ Page({
           that.loadOrders();
         },
         fail: () => {
-          // 用户取消支付 → 撤销订单
-          api.put(`/orders/${id}/cancel`).then(() => {
-            wx.showToast({ title: '订单已撤销', icon: 'none' });
-            that.loadOrders();
-          });
+          // 用户取消支付 → 关闭微信侧订单，释放 order_no
+          api.post('/pay/close', { order_id: id });
         },
       });
     }).catch((err) => {

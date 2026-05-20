@@ -47,7 +47,7 @@ router.post('/unified', authUser, async (req, res) => {
 
     console.log('[支付] 统一下单请求:', { outTradeNo: order.order_no, totalFee, openid: openid.slice(0, 10) + '...' });
 
-    // 订单号重复时自动重试（最多 3 次，每次追加 _R1, _R2, _R3 后缀）
+    // 订单号重复时：先关闭微信侧旧订单，再用原 order_no 重试
     let result;
     let orderNo = order.order_no;
     let retry = 0;
@@ -67,11 +67,16 @@ router.post('/unified', authUser, async (req, res) => {
 
       const respdata = result.respdata || {};
       if (respdata.result_code === 'SUCCESS') break;
-      if (respdata.err_code !== 'INVALID_REQUEST' || !(respdata.err_code_des || '').includes('订单号重复')) break;
 
-      retry++;
-      orderNo = order.order_no + '_R' + retry;
-      console.log('[支付] 订单号重复，重试:', orderNo);
+      // 订单号重复 → 先关闭微信侧旧订单，再用原号重试
+      if (respdata.err_code === 'INVALID_REQUEST' && (respdata.err_code_des || '').includes('订单号重复')) {
+        console.log('[支付] 订单号重复，先关闭微信侧旧订单:', orderNo);
+        await pay.closeOrder(orderNo);
+        retry++;
+        continue;
+      }
+
+      break; // 其他错误直接退出
     }
 
     // 兼容两种返回格式
@@ -139,7 +144,29 @@ router.post('/callback', async (req, res) => {
     res.send('success');
   } catch (err) {
     console.error('[支付回调] 异常:', err.message);
-    res.send('success'); // 微信要求始终返回 success
+    res.send('success');
+  }
+});
+
+/** 关闭微信侧支付订单（释放 order_no 供重试） */
+router.post('/close', authUser, async (req, res) => {
+  try {
+    const { order_id } = req.body;
+    if (!order_id) return res.json(error(400, '缺少订单ID'));
+
+    const [rows] = await pool.execute('SELECT order_no, status FROM orders WHERE id = ? AND user_id = ?', [order_id, req.user.userId]);
+    const order = rows[0];
+    if (!order) return res.json(error(404, '订单不存在'));
+    if (order.status !== 'pending') return res.json(error(400, '当前状态不可关闭支付'));
+
+    console.log('[支付] 关闭微信侧订单:', order.order_no);
+    const result = await pay.closeOrder(order.order_no);
+    console.log('[支付] 关闭结果:', JSON.stringify(result));
+
+    res.json(success(null, '支付已关闭，可重新发起'));
+  } catch (err) {
+    console.error('[支付] 关闭异常:', err.message);
+    res.json(error(500, '关闭失败'));
   }
 });
 

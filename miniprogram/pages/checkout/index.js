@@ -114,10 +114,9 @@ Page({
             }, 1000);
           },
           fail: () => {
-            // 用户取消支付 → 撤销订单
-            api.put(`/orders/${order.id}/cancel`).then(() => {
-              wx.showToast({ title: '支付已取消，订单已撤销', icon: 'none' });
-              setTimeout(() => { wx.switchTab({ url: '/pages/cart/index' }); }, 1500);
+            // 用户取消支付 → 关闭微信侧订单，释放 order_no，可重新发起
+            api.post('/pay/close', { order_id: order.id }).finally(() => {
+              this.setData({ submitting: false });
             });
           },
         });

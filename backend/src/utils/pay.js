@@ -20,6 +20,7 @@ function callPay(action, paybody) {
       hostname: 'api.weixin.qq.com',
       path: `/_/pay/${action}`,
       method: 'POST',
+      timeout: 15000, // 15 秒超时，防止 nginx 502
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(body),
@@ -28,11 +29,24 @@ function callPay(action, paybody) {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
+        // 检查是否返回了 HTML 错误页（如 502/503）
+        if (data.startsWith('<') || data.startsWith('\r') || data.startsWith('\n')) {
+          console.error(`[支付] API 返回非 JSON 响应 (${res.statusCode}):`, data.slice(0, 200));
+          return resolve({ return_code: 'FAIL', return_msg: '支付服务暂不可用' });
+        }
         try { resolve(JSON.parse(data)); }
-        catch (_) { resolve({ raw: data }); }
+        catch (_) { resolve({ return_code: 'FAIL', return_msg: '支付返回异常: ' + data.slice(0, 50) }); }
       });
     });
-    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy();
+      console.error('[支付] 请求超时');
+      resolve({ return_code: 'FAIL', return_msg: '支付服务超时，请稍后重试' });
+    });
+    req.on('error', (err) => {
+      console.error('[支付] 请求失败:', err.message);
+      resolve({ return_code: 'FAIL', return_msg: '支付服务异常: ' + err.message });
+    });
     req.write(body);
     req.end();
   });

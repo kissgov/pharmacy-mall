@@ -38,7 +38,7 @@ router.post('/unified', authUser, async (req, res) => {
     const envId = req.headers['x-wx-env'] || '';
     const serviceName = req.headers['x-wx-service'] || 'pharmary-mall-api';
 
-    // 金额校验（元 → 分），防止 NaN/0 导致微信报"缺少参数"
+    // 金额校验（元 → 分）
     const totalFee = Math.round(Number(order.pay_amount || 0) * 100);
     if (!totalFee || totalFee <= 0) {
       console.error('[支付] 金额无效:', { order_id, pay_amount: order.pay_amount, totalFee });
@@ -47,40 +47,60 @@ router.post('/unified', authUser, async (req, res) => {
 
     console.log('[支付] 统一下单请求:', { outTradeNo: order.order_no, totalFee, openid: openid.slice(0, 10) + '...' });
 
-    const result = await pay.unifiedOrder({
-      openid,
-      clientIp,
-      envId,
-      serviceName,
-      outTradeNo: order.order_no,
-      body: '药店商城订单',
-      totalFee,
-    });
+    // 订单号重复时自动重试（最多 3 次，每次追加 _R1, _R2, _R3 后缀）
+    let result;
+    let orderNo = order.order_no;
+    let retry = 0;
 
-    console.log('[支付] 统一下单结果:', JSON.stringify(result));
+    while (retry < 3) {
+      result = await pay.unifiedOrder({
+        openid,
+        clientIp,
+        envId,
+        serviceName,
+        outTradeNo: orderNo,
+        body: '药店商城订单',
+        totalFee,
+      });
 
-    // 兼容两种返回格式：
-    // 格式1: { errcode: 0, payment: { timeStamp, ... } }
-    // 格式2: { errcode: 0, respdata: { return_code, result_code, payment } }
+      console.log('[支付] 统一下单结果:', JSON.stringify(result));
+
+      const respdata = result.respdata || {};
+      if (respdata.result_code === 'SUCCESS') break;
+      if (respdata.err_code !== 'INVALID_REQUEST' || !(respdata.err_code_des || '').includes('订单号重复')) break;
+
+      retry++;
+      orderNo = order.order_no + '_R' + retry;
+      console.log('[支付] 订单号重复，重试:', orderNo);
+    }
+
+    // 兼容两种返回格式
     const payment = result.payment || (result.respdata && result.respdata.payment);
-    const returnCode = result.return_code || (result.respdata && result.respdata.return_code);
-    const resultCode = result.result_code || (result.respdata && result.respdata.result_code);
+    const respdata = result.respdata || {};
+    const returnCode = respdata.return_code || result.return_code || '';
+    const resultCode = respdata.result_code || result.result_code || '';
 
-    if (payment) {
-      // 直接透传 payment 对象给小程序 wx.requestPayment
+    // 只有两阶段都 SUCCESS 且 prepay_id 非空才算成功
+    if (returnCode === 'SUCCESS' && resultCode === 'SUCCESS' && payment && payment.package && payment.package !== 'prepay_id=') {
       res.json(success({
         timeStamp: payment.timeStamp || '',
         nonceStr: payment.nonceStr || '',
-        package: payment.package || '',
+        package: payment.package,
         signType: payment.signType || 'MD5',
         paySign: payment.paySign || '',
         order_no: order.order_no,
       }, '预下单成功'));
-    } else if (returnCode === 'FAIL' || result.return_code === 'FAIL') {
-      const errMsg = result.return_msg || result.errmsg || '支付预下单失败';
-      res.json(error(500, errMsg));
     } else {
-      const errMsg = result.return_msg || result.errmsg || '支付预下单失败';
+      const errMsg = respdata.err_code_des || respdata.return_msg || result.errmsg || '支付预下单失败';
+      console.error('[支付] 预下单失败:', errMsg);
+
+      // 订单号重复：可能上一次支付已成功，检查订单状态
+      if (respdata.err_code === 'INVALID_REQUEST' && errMsg.includes('订单号重复')) {
+        const [latestRows] = await pool.execute('SELECT * FROM orders WHERE id = ?', [order_id]);
+        if (latestRows[0] && latestRows[0].status === 'paid') {
+          return res.json(error(400, '该订单已支付'));
+        }
+      }
       res.json(error(500, errMsg));
     }
   } catch (err) {

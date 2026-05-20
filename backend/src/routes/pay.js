@@ -30,6 +30,12 @@ router.post('/unified', authUser, async (req, res) => {
     const order = rows[0];
     if (!order) return res.json(error(404, '订单不存在或状态不可支付'));
 
+    // 检查支付是否已超时
+    if (order.pay_expire_at && new Date(order.pay_expire_at) < new Date()) {
+      await pool.execute("UPDATE orders SET status = 'cancelled' WHERE id = ?", [order_id]);
+      return res.json(error(400, '订单支付超时，已自动取消，请重新下单'));
+    }
+
     const openid = req.headers['x-wx-openid'] || req.user.openid || '';
     const clientIp = (req.headers['x-forwarded-for'] || req.ip || '127.0.0.1').split(',')[0].trim();
     const envId = req.headers['x-wx-env'] || '';

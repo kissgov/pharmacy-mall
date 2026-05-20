@@ -16,19 +16,57 @@ Page({
   loadOrder(id) {
     api.get(`/orders/${id}`).then((order) => {
       const currentStep = this.data.statusSteps.indexOf(order.status);
-      this.setData({
-        order: {
-          ...order,
-          total_amount: formatPrice(order.total_amount),
-          pay_amount: formatPrice(order.pay_amount),
-          discount_amount: formatPrice(order.discount_amount),
-          created_at: formatDate(order.created_at),
-          statusText: getOrderStatusText(order.status),
-          statusColor: getOrderStatusColor(order.status),
-        },
-        currentStep: Math.max(0, currentStep),
-      });
+      const formatted = {
+        ...order,
+        total_amount: formatPrice(order.total_amount),
+        pay_amount: formatPrice(order.pay_amount),
+        discount_amount: formatPrice(order.discount_amount),
+        created_at: formatDate(order.created_at),
+        statusText: getOrderStatusText(order.status),
+        statusColor: getOrderStatusColor(order.status),
+      };
+
+      // 计算支付倒计时
+      if (order.status === 'pending' && order.pay_expire_at) {
+        const now = Date.now();
+        const expireAt = new Date(order.pay_expire_at).getTime();
+        const remaining = Math.max(0, Math.floor((expireAt - now) / 1000));
+        formatted.payRemaining = remaining;
+        formatted.payCountdown = this.formatCountdown(remaining);
+        if (remaining > 0) {
+          this.startCountdown(id);
+        }
+      }
+
+      this.setData({ order: formatted, currentStep: Math.max(0, currentStep) });
     });
+  },
+
+  startCountdown(id) {
+    clearInterval(this._countdownTimer);
+    this._countdownTimer = setInterval(() => {
+      const remaining = (this.data.order.payRemaining || 0) - 1;
+      if (remaining <= 0) {
+        clearInterval(this._countdownTimer);
+        this.setData({ 'order.payRemaining': 0, 'order.payCountdown': '已超时' });
+        this.loadOrder(id);
+      } else {
+        this.setData({
+          'order.payRemaining': remaining,
+          'order.payCountdown': this.formatCountdown(remaining),
+        });
+      }
+    }, 1000);
+  },
+
+  formatCountdown(seconds) {
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return `${min}分${sec.toString().padStart(2, '0')}秒`;
+  },
+
+  onUnload() {
+    clearInterval(this._countdownTimer);
   },
 
   onPay() {

@@ -2,6 +2,7 @@
   <!-- 状态 -->
   <view class="status-card" style="background: {{order.statusColor}}">
     <text class="status-text">{{order.statusText}}</text>
+    <text wx:if="{{order.status === 'pending' && order.payCountdown}}" class="countdown">请在 {{order.payCountdown}} 内完成支付，逾期订单将自动取消</text>
     <text wx:if="{{order.status === 'shipped' && order.tracking_no}}" class="tracking">物流: {{order.logistics_company}} {{order.tracking_no}}</text>
   </view>
 

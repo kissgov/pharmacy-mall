@@ -15,12 +15,13 @@ const Order = {
     try {
       await conn.beginTransaction();
 
-      // 1. 插入订单
+      // 1. 插入订单（30 分钟支付超时）
+      const payExpireAt = new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
       const [orderResult] = await conn.execute(
         `INSERT INTO orders (order_no, user_id, address_snapshot, total_amount,
-          discount_amount, freight, pay_amount, coupon_id, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-        [orderNo, userId, addressSnapshot, totalAmount, discountAmount, freight, payAmount, couponId || null]
+          discount_amount, freight, pay_amount, coupon_id, status, pay_expire_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
+        [orderNo, userId, addressSnapshot, totalAmount, discountAmount, freight, payAmount, couponId || null, payExpireAt]
       );
       const orderId = orderResult.insertId;
 

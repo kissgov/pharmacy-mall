@@ -4,6 +4,7 @@
   display: flex; flex-direction: column;
 }
 .status-text { font-size: 36rpx; font-weight: bold; }
+.countdown { font-size: 24rpx; margin-top: 8rpx; opacity: 0.95; color: #ffe066; }
 .tracking { font-size: 24rpx; margin-top: 8rpx; opacity: 0.9; }
 .card { background: #fff; padding: 24rpx; margin: 16rpx; border-radius: 12rpx; }
 .card-title { font-size: 28rpx; font-weight: bold; color: #333; margin-bottom: 12rpx; display: block; }

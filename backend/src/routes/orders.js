@@ -135,6 +135,10 @@ router.post('/', [
 
 /** 订单列表 */
 router.get('/', async (req, res) => {
+  // 自动取消超时未支付的订单
+  await pool.execute(
+    "UPDATE orders SET status = 'cancelled' WHERE status = 'pending' AND pay_expire_at IS NOT NULL AND pay_expire_at < NOW()"
+  );
   const { status, page, page_size } = req.query;
   const result = await Order.listByUser(
     req.user.userId,
@@ -147,9 +151,15 @@ router.get('/', async (req, res) => {
 
 /** 订单详情 */
 router.get('/:id', async (req, res) => {
-  const order = await Order.findById(parseInt(req.params.id, 10));
+  const orderId = parseInt(req.params.id, 10);
+  const order = await Order.findById(orderId);
   if (!order || order.user_id !== req.user.userId) {
     return res.json(error(404, '订单不存在'));
+  }
+  // 超时自动取消
+  if (order.status === 'pending' && order.pay_expire_at && new Date(order.pay_expire_at) < new Date()) {
+    await pool.execute("UPDATE orders SET status = 'cancelled' WHERE id = ?", [orderId]);
+    order.status = 'cancelled';
   }
   res.json(success(order));
 });

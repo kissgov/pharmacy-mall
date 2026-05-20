@@ -7,12 +7,14 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'https://pharmary-mall-api-239896-5-1309632689.sh.run.tcloudbase.com',
         changeOrigin: true,
+        secure: false,
       },
       '/uploads': {
-        target: 'http://localhost:3001',
+        target: 'https://pharmary-mall-api-239896-5-1309632689.sh.run.tcloudbase.com',
         changeOrigin: true,
+        secure: false,
       },
     },
   },

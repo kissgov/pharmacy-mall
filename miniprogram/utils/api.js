@@ -3,7 +3,7 @@
  * 统一处理 token、错误格式、图片 URL 前缀
  */
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'https://pharmary-mall-api-239896-5-1309632689.sh.run.tcloudbase.com';
 const API_URL = BASE_URL + '/api';
 
 /**

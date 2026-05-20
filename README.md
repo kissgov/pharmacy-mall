@@ -49,10 +49,8 @@ cd admin && npm install && npm run dev
 - GitHub: https://github.com/kissgov/pharmacy-mall
 
 ### 微信云托管
-1. 打开 https://cloud.weixin.qq.com → 创建环境 → 关联 `kissgov/pharmacy-mall`
-2. 分支 `master`，构建目录 `/`，端口 `3000`
-3. 环境变量: `PORT=3000` `JWT_SECRET=pharmacy_mall_jwt_secret_2024` `DB_PATH=/app/data/pharmacy.db`
-4. 自动构建部署，获得 `https://xxx.ap-shanghai.run.tcloudbase.com` 域名
+- 生产环境: https://pharmary-mall-api-239896-5-1309632689.sh.run.tcloudbase.com
+- 分支 `master`，构建目录 `/`，端口 `3000`
 
 ### Docker 本地运行
 ```bash

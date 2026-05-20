@@ -12,9 +12,9 @@ const { success, error, paginated } = require('../../utils/response');
 const router = Router();
 
 /** 处方列表 */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { status, page, page_size } = req.query;
-  const result = Prescription.list({
+  const result = await Prescription.list({
     status,
     page: page ? parseInt(page, 10) : 1,
     pageSize: page_size ? parseInt(page_size, 10) : 20,
@@ -23,8 +23,8 @@ router.get('/', (req, res) => {
 });
 
 /** 处方详情 */
-router.get('/:id', (req, res) => {
-  const prescription = Prescription.findById(parseInt(req.params.id, 10));
+router.get('/:id', async (req, res) => {
+  const prescription = await Prescription.findById(parseInt(req.params.id, 10));
   if (!prescription) {
     return res.json(error(404, '处方不存在'));
   }
@@ -34,18 +34,18 @@ router.get('/:id', (req, res) => {
 /** 审核处方 */
 router.put('/:id/review', [
   body('status').isIn(['approved', 'rejected']).withMessage('审核结果无效'),
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ code: 400, message: '参数错误', data: errors.array() });
   }
   const id = parseInt(req.params.id, 10);
-  const prescription = Prescription.findById(id);
+  const prescription = await Prescription.findById(id);
   if (!prescription) {
     return res.json(error(404, '处方不存在'));
   }
 
-  const updated = Prescription.review(id, {
+  const updated = await Prescription.review(id, {
     status: req.body.status,
     remark: req.body.remark,
     reviewerId: req.admin.userId,

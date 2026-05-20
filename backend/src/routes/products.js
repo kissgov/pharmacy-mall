@@ -13,9 +13,9 @@ const { success, error, paginated } = require('../utils/response');
 const router = Router();
 
 /** 商品列表 */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { category_id, page, page_size, sort } = req.query;
-  const result = Product.list({
+  const result = await Product.list({
     category_id: category_id ? parseInt(category_id, 10) : undefined,
     page: page ? parseInt(page, 10) : 1,
     page_size: page_size ? parseInt(page_size, 10) : 20,
@@ -25,31 +25,31 @@ router.get('/', (req, res) => {
 });
 
 /** 商品搜索 */
-router.get('/search', (req, res) => {
+router.get('/search', async (req, res) => {
   const { q, page, page_size } = req.query;
   if (!q || !q.trim()) {
     return res.json(paginated([], 0));
   }
-  const result = Product.search(q.trim(), page ? parseInt(page, 10) : 1, page_size ? parseInt(page_size, 10) : 20);
+  const result = await Product.search(q.trim(), page ? parseInt(page, 10) : 1, page_size ? parseInt(page_size, 10) : 20);
   res.json(paginated(result.list, result.total));
 });
 
 /** 商品详情 */
-router.get('/:id', (req, res) => {
-  const product = Product.findById(parseInt(req.params.id, 10));
+router.get('/:id', async (req, res) => {
+  const product = await Product.findById(parseInt(req.params.id, 10));
   if (!product) {
     return res.json(error(404, '商品不存在'));
   }
   // 附加平均评分
-  const ratingInfo = Review.getAvgRating(product.id);
+  const ratingInfo = await Review.getAvgRating(product.id);
   res.json(success({ ...product, ...ratingInfo }));
 });
 
 /** 商品评价列表 */
-router.get('/:id/reviews', (req, res) => {
+router.get('/:id/reviews', async (req, res) => {
   const productId = parseInt(req.params.id, 10);
   const { page, page_size } = req.query;
-  const result = Review.listByProduct(
+  const result = await Review.listByProduct(
     productId,
     page ? parseInt(page, 10) : 1,
     page_size ? parseInt(page_size, 10) : 20

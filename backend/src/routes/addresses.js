@@ -17,14 +17,14 @@ const router = Router();
 router.use(authUser);
 
 /** 地址列表 */
-router.get('/', (req, res) => {
-  const list = Address.listByUser(req.user.userId);
+router.get('/', async (req, res) => {
+  const list = await Address.listByUser(req.user.userId);
   res.json(success(list));
 });
 
 /** 地址详情 */
-router.get('/:id', (req, res) => {
-  const addr = Address.findById(parseInt(req.params.id, 10));
+router.get('/:id', async (req, res) => {
+  const addr = await Address.findById(parseInt(req.params.id, 10));
   if (!addr || addr.user_id !== req.user.userId) {
     return res.json(error(404, '地址不存在'));
   }
@@ -36,12 +36,12 @@ router.post('/', [
   body('name').notEmpty().withMessage('请输入收货人姓名'),
   body('phone').notEmpty().withMessage('请输入收货人电话'),
   body('detail').notEmpty().withMessage('请输入详细地址'),
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ code: 400, message: '参数错误', data: errors.array() });
   }
-  const addr = Address.create({
+  const addr = await Address.create({
     user_id: req.user.userId,
     name: req.body.name,
     phone: req.body.phone,
@@ -55,14 +55,14 @@ router.post('/', [
 });
 
 /** 更新地址 */
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
-  const addr = Address.findById(id);
+  const addr = await Address.findById(id);
   if (!addr || addr.user_id !== req.user.userId) {
     return res.json(error(404, '地址不存在'));
   }
 
-  const updated = Address.update(id, {
+  const updated = await Address.update(id, {
     name: req.body.name,
     phone: req.body.phone,
     province: req.body.province,
@@ -74,24 +74,24 @@ router.put('/:id', (req, res) => {
 });
 
 /** 删除地址 */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
-  const addr = Address.findById(id);
+  const addr = await Address.findById(id);
   if (!addr || addr.user_id !== req.user.userId) {
     return res.json(error(404, '地址不存在'));
   }
-  Address.delete(id);
+  await Address.delete(id);
   res.json(success(null, '地址已删除'));
 });
 
 /** 设为默认地址 */
-router.put('/:id/default', (req, res) => {
+router.put('/:id/default', async (req, res) => {
   const id = parseInt(req.params.id, 10);
-  const addr = Address.findById(id);
+  const addr = await Address.findById(id);
   if (!addr || addr.user_id !== req.user.userId) {
     return res.json(error(404, '地址不存在'));
   }
-  const updated = Address.setDefault(req.user.userId, id);
+  const updated = await Address.setDefault(req.user.userId, id);
   res.json(success(updated, '已设为默认地址'));
 });
 

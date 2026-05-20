@@ -15,9 +15,9 @@ const { success, error, paginated } = require('../../utils/response');
 const router = Router();
 
 /** 商品列表 */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { category_id, page, page_size } = req.query;
-  const result = Product.list({
+  const result = await Product.list({
     category_id: category_id ? parseInt(category_id, 10) : undefined,
     page: page ? parseInt(page, 10) : 1,
     page_size: page_size ? parseInt(page_size, 10) : 20,
@@ -26,8 +26,8 @@ router.get('/', (req, res) => {
 });
 
 /** 商品详情 */
-router.get('/:id', (req, res) => {
-  const product = Product.findById(parseInt(req.params.id, 10));
+router.get('/:id', async (req, res) => {
+  const product = await Product.findById(parseInt(req.params.id, 10));
   if (!product) {
     return res.json(error(404, '商品不存在'));
   }
@@ -39,37 +39,37 @@ router.post('/', [
   body('category_id').isInt({ min: 1 }).withMessage('请选择分类'),
   body('name').notEmpty().withMessage('请输入商品名称'),
   body('price').isFloat({ min: 0 }).withMessage('请输入有效价格'),
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ code: 400, message: '参数错误', data: errors.array() });
   }
-  const product = Product.create(req.body);
+  const product = await Product.create(req.body);
   res.json(success(product, '商品已创建'));
 });
 
 /** 更新商品 */
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
-  const existing = Product.findById(id);
+  const existing = await Product.findById(id);
   if (!existing) {
     return res.json(error(404, '商品不存在'));
   }
 
-  const product = Product.update(id, req.body);
+  const product = await Product.update(id, req.body);
   res.json(success(product, '商品已更新'));
 });
 
 /** 上下架 */
 router.put('/:id/status', [
   body('status').isIn(['on', 'off']).withMessage('状态值无效'),
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ code: 400, message: '参数错误', data: errors.array() });
   }
   const id = parseInt(req.params.id, 10);
-  const product = Product.updateStatus(id, req.body.status);
+  const product = await Product.updateStatus(id, req.body.status);
   if (!product) {
     return res.json(error(404, '商品不存在'));
   }
@@ -77,9 +77,9 @@ router.put('/:id/status', [
 });
 
 /** 删除商品 */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
-  Product.delete(id);
+  await Product.delete(id);
   res.json(success(null, '商品已删除'));
 });
 

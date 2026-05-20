@@ -21,7 +21,7 @@ const router = Router();
  */
 router.post('/login', [
   body('code').notEmpty().withMessage('缺少登录凭证 code'),
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ code: 400, message: '参数错误', data: errors.array() });
@@ -38,15 +38,15 @@ router.post('/login', [
   }
 
   // 查找或创建用户
-  let user = User.findByOpenid(openid);
+  let user = await User.findByOpenid(openid);
   if (!user) {
-    user = User.create({
+    user = await User.create({
       openid,
       nickname: nickname || `用户${Date.now().toString(36)}`,
       avatar_url: avatar_url || null,
     });
   } else if (nickname || avatar_url) {
-    user = User.update(user.id, { nickname, avatar_url });
+    user = await User.update(user.id, { nickname, avatar_url });
   }
 
   // 签发 JWT
@@ -60,8 +60,8 @@ router.post('/login', [
 });
 
 /** 获取当前用户信息 */
-router.get('/profile', authUser, (req, res) => {
-  const user = User.findById(req.user.userId);
+router.get('/profile', authUser, async (req, res) => {
+  const user = await User.findById(req.user.userId);
   if (!user) {
     return res.json(error(404, '用户不存在'));
   }
@@ -73,12 +73,12 @@ router.put('/profile', authUser, [
   body('nickname').optional().isString(),
   body('avatar_url').optional().isString(),
   body('phone').optional().isString(),
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ code: 400, message: '参数错误', data: errors.array() });
   }
-  const user = User.update(req.user.userId, {
+  const user = await User.update(req.user.userId, {
     nickname: req.body.nickname,
     avatar_url: req.body.avatar_url,
     phone: req.body.phone,

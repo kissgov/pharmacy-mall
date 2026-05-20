@@ -26,8 +26,8 @@ COPY backend/uploads/ ./uploads/
 # 管理后台构建产物
 RUN cp -r /app/admin/dist ./admin-dist
 
-# 数据目录
-RUN mkdir -p data uploads/products uploads/prescriptions uploads/banners
+# 数据目录（仅 uploads 本地缓存，MySQL 在外部）
+RUN mkdir -p uploads/products uploads/prescriptions uploads/banners
 
 EXPOSE 3000
 CMD ["node", "src/server.js"]

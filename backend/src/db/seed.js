@@ -7,37 +7,40 @@
  */
 
 const bcrypt = require('bcryptjs');
-const db = require('./index');
+const pool = require('./index');
 
-function run() {
+async function run() {
   console.log('开始填充种子数据...');
 
-  seedAdmin();
-  seedCategories();
-  seedProducts();
-  seedCoupons();
-  seedBanners();
+  await seedAdmin();
+  await seedCategories();
+  await seedProducts();
+  await seedCoupons();
+  await seedBanners();
 
   console.log('种子数据填充完成！');
 }
 
 // ========== 管理员 ==========
-function seedAdmin() {
-  const count = db.prepare('SELECT COUNT(*) AS count FROM admin_users').get().count;
-  if (count > 0) {
+async function seedAdmin() {
+  const [countRows] = await pool.execute('SELECT COUNT(*) AS count FROM admin_users');
+  if (countRows[0].count > 0) {
     console.log('  ⏭ 管理员已存在，跳过');
     return;
   }
 
   const hash = bcrypt.hashSync('admin123', 10);
-  db.prepare('INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)').run('admin', hash, 'admin');
+  await pool.execute(
+    'INSERT INTO admin_users (username, password_hash, role) VALUES (?, ?, ?)',
+    ['admin', hash, 'admin']
+  );
   console.log('  ✔ 管理员账号: admin / admin123');
 }
 
 // ========== 分类 ==========
-function seedCategories() {
-  const count = db.prepare('SELECT COUNT(*) AS count FROM categories').get().count;
-  if (count > 0) {
+async function seedCategories() {
+  const [countRows] = await pool.execute('SELECT COUNT(*) AS count FROM categories');
+  if (countRows[0].count > 0) {
     console.log('  ⏭ 分类已存在，跳过');
     return;
   }
@@ -75,33 +78,44 @@ function seedCategories() {
     ]},
   ];
 
-  const insertCat = db.prepare('INSERT INTO categories (name, parent_id, icon, sort) VALUES (?, NULL, ?, ?)');
-  const insertSub = db.prepare('INSERT INTO categories (name, parent_id, icon, sort) VALUES (?, ?, ?, ?)');
-
-  const tx = db.transaction(() => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
     for (const cat of cats) {
-      const r = insertCat.run(cat.name, cat.icon, cat.sort);
-      const parentId = r.lastInsertRowid;
+      const [r] = await conn.execute(
+        'INSERT INTO categories (name, parent_id, icon, sort) VALUES (?, NULL, ?, ?)',
+        [cat.name, cat.icon, cat.sort]
+      );
+      const parentId = r.insertId;
       for (const sub of cat.children) {
-        insertSub.run(sub.name, parentId, sub.icon, sub.sort);
+        await conn.execute(
+          'INSERT INTO categories (name, parent_id, icon, sort) VALUES (?, ?, ?, ?)',
+          [sub.name, parentId, sub.icon, sub.sort]
+        );
       }
     }
-  });
-  tx();
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+
   console.log(`  ✔ 分类: ${cats.length} 个一级 + ${cats.reduce((s, c) => s + c.children.length, 0)} 个二级`);
 }
 
 // ========== 商品 ==========
-function seedProducts() {
-  const count = db.prepare('SELECT COUNT(*) AS count FROM products').get().count;
-  if (count > 0) {
+async function seedProducts() {
+  const [countRows] = await pool.execute('SELECT COUNT(*) AS count FROM products');
+  if (countRows[0].count > 0) {
     console.log('  ⏭ 商品已存在，跳过');
     return;
   }
 
   // 获取分类 ID 映射
+  const [cats] = await pool.execute('SELECT id, name FROM categories');
   const catMap = {};
-  const cats = db.prepare('SELECT id, name FROM categories').all();
   cats.forEach((c) => { catMap[c.name] = c.id; });
 
   const products = [
@@ -127,35 +141,41 @@ function seedProducts() {
     { name: '蛋白粉(400g)', cat: '蛋白粉', price: 168.00, member_price: 149.00, stock: 150, is_prescription: 0, brand: '汤臣倍健', manufacturer: '汤臣倍健股份有限公司', specification: '400g/罐', approval_number: '国食健字G20140123', usage_dosage: '每日1-2勺（约10-20g），加入温水或牛奶冲调饮用', contraindications: '肾功能不全者请遵医嘱', sales: 720 },
   ];
 
-  const insertProduct = db.prepare(`
-    INSERT INTO products (category_id, name, images, specification, brand, manufacturer,
-      price, member_price, stock, is_prescription, usage_dosage, contraindications,
-      approval_number, status, sales)
-    VALUES (?, ?, '[]', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'on', ?)
-  `);
-
-  const tx = db.transaction(() => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
     for (const p of products) {
       const catId = catMap[p.cat];
       if (!catId) {
         console.warn(`    警告: 分类"${p.cat}"未找到，跳过商品"${p.name}"`);
         continue;
       }
-      insertProduct.run(
-        catId, p.name, p.specification, p.brand, p.manufacturer,
-        p.price, p.member_price, p.stock, p.is_prescription,
-        p.usage_dosage, p.contraindications, p.approval_number, p.sales,
+      await conn.execute(
+        `INSERT INTO products (category_id, name, images, specification, brand, manufacturer,
+          price, member_price, stock, is_prescription, usage_dosage, contraindications,
+          approval_number, status, sales)
+         VALUES (?, ?, '[]', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'on', ?)`,
+        [
+          catId, p.name, p.specification, p.brand, p.manufacturer,
+          p.price, p.member_price, p.stock, p.is_prescription,
+          p.usage_dosage, p.contraindications, p.approval_number, p.sales,
+        ]
       );
     }
-  });
-  tx();
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
   console.log(`  ✔ 商品: ${products.length} 种`);
 }
 
 // ========== 优惠券 ==========
-function seedCoupons() {
-  const count = db.prepare('SELECT COUNT(*) AS count FROM coupons').get().count;
-  if (count > 0) {
+async function seedCoupons() {
+  const [countRows] = await pool.execute('SELECT COUNT(*) AS count FROM coupons');
+  if (countRows[0].count > 0) {
     console.log('  ⏭ 优惠券已存在，跳过');
     return;
   }
@@ -169,24 +189,30 @@ function seedCoupons() {
     { name: '会员9折券', type: 'discount', value: 0.9, min_amount: 0, total_count: 500 },
   ];
 
-  const insert = db.prepare(`
-    INSERT INTO coupons (name, type, value, min_amount, total_count, valid_from, valid_to, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
-  `);
-
-  const tx = db.transaction(() => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
     for (const c of coupons) {
-      insert.run(c.name, c.type, c.value, c.min_amount, c.total_count, now.toISOString(), thirtyDaysLater.toISOString());
+      await conn.execute(
+        `INSERT INTO coupons (name, type, value, min_amount, total_count, valid_from, valid_to, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'active')`,
+        [c.name, c.type, c.value, c.min_amount, c.total_count, now.toISOString(), thirtyDaysLater.toISOString()]
+      );
     }
-  });
-  tx();
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
   console.log(`  ✔ 优惠券: ${coupons.length} 个`);
 }
 
 // ========== Banner ==========
-function seedBanners() {
-  const count = db.prepare('SELECT COUNT(*) AS count FROM banners').get().count;
-  if (count > 0) {
+async function seedBanners() {
+  const [countRows] = await pool.execute('SELECT COUNT(*) AS count FROM banners');
+  if (countRows[0].count > 0) {
     console.log('  ⏭ Banner 已存在，跳过');
     return;
   }
@@ -196,21 +222,35 @@ function seedBanners() {
     { title: '会员专享 全场9折', image_url: '', sort: 2 },
   ];
 
-  const insert = db.prepare("INSERT INTO banners (title, image_url, sort, status) VALUES (?, ?, ?, 'active')");
-  const tx = db.transaction(() => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
     for (const b of banners) {
-      insert.run(b.title, b.image_url, b.sort);
+      await conn.execute(
+        "INSERT INTO banners (title, image_url, sort, status) VALUES (?, ?, ?, 'active')",
+        [b.title, b.image_url, b.sort]
+      );
     }
-  });
-  tx();
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
   console.log(`  ✔ Banner: ${banners.length} 个`);
 }
 
 // 直接运行时执行
 if (require.main === module) {
-  run();
-  // seed 运行后关闭数据库连接
-  db.close();
+  run()
+    .then(() => {
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('种子数据填充失败:', err);
+      process.exit(1);
+    });
 }
 
 module.exports = { run };

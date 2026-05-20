@@ -1,12 +1,12 @@
 /**
  * 分类数据模型
  */
-const db = require('../db');
+const pool = require('../db');
 
 const Category = {
   /** 获取树形分类结构 */
-  getTree() {
-    const all = db.prepare('SELECT * FROM categories ORDER BY sort ASC, id ASC').all();
+  async getTree() {
+    const [all] = await pool.execute('SELECT * FROM categories ORDER BY sort ASC, id ASC');
 
     // 构建 id -> 节点 的映射
     const map = {};
@@ -27,42 +27,45 @@ const Category = {
   },
 
   /** 根据 ID 查找分类 */
-  findById(id) {
-    return db.prepare('SELECT * FROM categories WHERE id = ?').get(id);
+  async findById(id) {
+    const [rows] = await pool.execute('SELECT * FROM categories WHERE id = ?', [id]);
+    return rows[0] || null;
   },
 
   /** 创建分类 */
-  create(data) {
-    const stmt = db.prepare(`
-      INSERT INTO categories (name, parent_id, icon, sort)
-      VALUES (@name, @parent_id, @icon, @sort)
-    `);
-    const result = stmt.run({
-      name: data.name,
-      parent_id: data.parent_id || null,
-      icon: data.icon || null,
-      sort: data.sort || 0,
-    });
-    return this.findById(result.lastInsertRowid);
+  async create(data) {
+    const [result] = await pool.execute(
+      `INSERT INTO categories (name, parent_id, icon, sort)
+       VALUES (?, ?, ?, ?)`,
+      [
+        data.name,
+        data.parent_id || null,
+        data.icon || null,
+        data.sort || 0,
+      ]
+    );
+    return this.findById(result.insertId);
   },
 
   /** 更新分类 */
-  update(id, data) {
+  async update(id, data) {
     const fields = [];
-    const values = { id };
-    if (data.name !== undefined) { fields.push('name = @name'); values.name = data.name; }
-    if (data.parent_id !== undefined) { fields.push('parent_id = @parent_id'); values.parent_id = data.parent_id; }
-    if (data.icon !== undefined) { fields.push('icon = @icon'); values.icon = data.icon; }
-    if (data.sort !== undefined) { fields.push('sort = @sort'); values.sort = data.sort; }
+    const values = [];
+    if (data.name !== undefined) { fields.push('name = ?'); values.push(data.name); }
+    if (data.parent_id !== undefined) { fields.push('parent_id = ?'); values.push(data.parent_id); }
+    if (data.icon !== undefined) { fields.push('icon = ?'); values.push(data.icon); }
+    if (data.sort !== undefined) { fields.push('sort = ?'); values.push(data.sort); }
 
     if (fields.length === 0) return this.findById(id);
-    db.prepare(`UPDATE categories SET ${fields.join(', ')} WHERE id = @id`).run(values);
+    values.push(id);
+    await pool.execute(`UPDATE categories SET ${fields.join(', ')} WHERE id = ?`, values);
     return this.findById(id);
   },
 
   /** 删除分类 */
-  delete(id) {
-    return db.prepare('DELETE FROM categories WHERE id = ?').run(id);
+  async delete(id) {
+    const [result] = await pool.execute('DELETE FROM categories WHERE id = ?', [id]);
+    return result;
   },
 };
 

@@ -15,20 +15,20 @@ const router = Router();
 router.use(authUser);
 
 /** 提醒列表 */
-router.get('/', (req, res) => {
-  const list = Reminder.listByUser(req.user.userId);
+router.get('/', async (req, res) => {
+  const list = await Reminder.listByUser(req.user.userId);
   res.json(success(list));
 });
 
 /** 创建提醒 */
 router.post('/', [
   body('drug_name').notEmpty().withMessage('请输入药品名称'),
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ code: 400, message: '参数错误', data: errors.array() });
   }
-  const reminder = Reminder.create({
+  const reminder = await Reminder.create({
     user_id: req.user.userId,
     drug_name: req.body.drug_name,
     dosage: req.body.dosage,
@@ -41,9 +41,9 @@ router.post('/', [
 });
 
 /** 更新提醒 */
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
-  const reminder = Reminder.update(id, {
+  const reminder = await Reminder.update(id, {
     drug_name: req.body.drug_name,
     dosage: req.body.dosage,
     frequency: req.body.frequency,
@@ -56,9 +56,9 @@ router.put('/:id', (req, res) => {
 });
 
 /** 删除提醒 */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
-  Reminder.delete(id);
+  await Reminder.delete(id);
   res.json(success(null, '提醒已删除'));
 });
 

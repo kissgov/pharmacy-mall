@@ -12,24 +12,24 @@ const { success, error } = require('../utils/response');
 const router = Router();
 
 /** 可领取优惠券列表（公开） */
-router.get('/', (req, res) => {
-  const list = Coupon.listAvailable();
+router.get('/', async (req, res) => {
+  const list = await Coupon.listAvailable();
   res.json(success(list));
 });
 
 /** 我的优惠券（需登录） */
-router.get('/mine', authUser, (req, res) => {
+router.get('/mine', authUser, async (req, res) => {
   const { status } = req.query;
-  const list = Coupon.listByUser(req.user.userId, status);
+  const list = await Coupon.listByUser(req.user.userId, status);
   res.json(success(list));
 });
 
 /** 领取优惠券（需登录） */
-router.post('/:id/receive', authUser, (req, res) => {
+router.post('/:id/receive', authUser, async (req, res) => {
   const couponId = parseInt(req.params.id, 10);
 
   try {
-    const userCoupon = Coupon.receive(req.user.userId, couponId);
+    const userCoupon = await Coupon.receive(req.user.userId, couponId);
     res.json(success(userCoupon, '领取成功'));
   } catch (err) {
     res.json(error(400, err.message));

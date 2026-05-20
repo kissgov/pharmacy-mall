@@ -12,9 +12,9 @@ const { success, error, paginated } = require('../../utils/response');
 const router = Router();
 
 /** 订单列表 */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { status, page, page_size } = req.query;
-  const result = Order.list({
+  const result = await Order.list({
     status,
     page: page ? parseInt(page, 10) : 1,
     pageSize: page_size ? parseInt(page_size, 10) : 20,
@@ -23,8 +23,8 @@ router.get('/', (req, res) => {
 });
 
 /** 订单详情 */
-router.get('/:id', (req, res) => {
-  const order = Order.findById(parseInt(req.params.id, 10));
+router.get('/:id', async (req, res) => {
+  const order = await Order.findById(parseInt(req.params.id, 10));
   if (!order) {
     return res.json(error(404, '订单不存在'));
   }
@@ -35,13 +35,13 @@ router.get('/:id', (req, res) => {
 router.put('/:id/ship', [
   body('tracking_no').notEmpty().withMessage('请输入物流单号'),
   body('logistics_company').notEmpty().withMessage('请输入物流公司'),
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ code: 400, message: '参数错误', data: errors.array() });
   }
   const orderId = parseInt(req.params.id, 10);
-  const order = Order.findById(orderId);
+  const order = await Order.findById(orderId);
 
   if (!order) {
     return res.json(error(404, '订单不存在'));
@@ -50,7 +50,7 @@ router.put('/:id/ship', [
     return res.json(error(400, '当前订单状态不可发货'));
   }
 
-  const updated = Order.ship(orderId, {
+  const updated = await Order.ship(orderId, {
     tracking_no: req.body.tracking_no,
     logistics_company: req.body.logistics_company,
   });

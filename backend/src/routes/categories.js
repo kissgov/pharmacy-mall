@@ -9,8 +9,8 @@ const { success } = require('../utils/response');
 const router = Router();
 
 /** 获取分类树 */
-router.get('/', (req, res) => {
-  const tree = Category.getTree();
+router.get('/', async (req, res) => {
+  const tree = await Category.getTree();
   res.json(success(tree));
 });
 

@@ -3,48 +3,55 @@
  * GET /api/admin/dashboard — 统计数据
  */
 const { Router } = require('express');
-const db = require('../../db');
+const pool = require('../../db');
 const { success } = require('../../utils/response');
 
 const router = Router();
 
 /** 仪表盘统计数据 */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
 
   // 今日订单数
-  const todayOrders = db.prepare(
-    "SELECT COUNT(*) AS count FROM orders WHERE date(created_at) = ?"
-  ).get(today).count;
+  const [todayOrdersRows] = await pool.execute(
+    "SELECT COUNT(*) AS count FROM orders WHERE DATE(created_at) = ?",
+    [today]
+  );
+  const todayOrders = todayOrdersRows[0].count;
 
   // 今日销售额（已支付 + 已发货 + 已完成）
-  const todaySales = db.prepare(
+  const [todaySalesRows] = await pool.execute(
     `SELECT COALESCE(SUM(pay_amount), 0) AS total FROM orders
-     WHERE date(created_at) = ? AND status IN ('paid', 'shipped', 'completed')`
-  ).get(today).total;
+     WHERE DATE(created_at) = ? AND status IN ('paid', 'shipped', 'completed')`,
+    [today]
+  );
+  const todaySales = todaySalesRows[0].total;
 
   // 待审核处方
-  const pendingPrescriptions = db.prepare(
+  const [pendingPrescriptionsRows] = await pool.execute(
     "SELECT COUNT(*) AS count FROM prescriptions WHERE status = 'pending'"
-  ).get().count;
+  );
+  const pendingPrescriptions = pendingPrescriptionsRows[0].count;
 
   // 总用户数
-  const totalUsers = db.prepare('SELECT COUNT(*) AS count FROM users').get().count;
+  const [totalUsersRows] = await pool.execute('SELECT COUNT(*) AS count FROM users');
+  const totalUsers = totalUsersRows[0].count;
 
   // 近 7 天每日销售额
-  const weeklySales = db.prepare(`
-    SELECT date(created_at) AS date, COALESCE(SUM(pay_amount), 0) AS amount
-    FROM orders
-    WHERE date(created_at) >= date('now', '-6 days')
-      AND status IN ('paid', 'shipped', 'completed')
-    GROUP BY date(created_at)
-    ORDER BY date ASC
-  `).all();
+  const [weeklySales] = await pool.execute(
+    `SELECT DATE(created_at) AS date, COALESCE(SUM(pay_amount), 0) AS amount
+     FROM orders
+     WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+       AND status IN ('paid', 'shipped', 'completed')
+     GROUP BY DATE(created_at)
+     ORDER BY date ASC`
+  );
 
   // 今日待处理订单数
-  const pendingOrders = db.prepare(
+  const [pendingOrdersRows] = await pool.execute(
     "SELECT COUNT(*) AS count FROM orders WHERE status = 'pending'"
-  ).get().count;
+  );
+  const pendingOrders = pendingOrdersRows[0].count;
 
   res.json(success({
     todayOrders,

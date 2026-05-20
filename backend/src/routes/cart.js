@@ -19,8 +19,8 @@ const router = Router();
 router.use(authUser);
 
 /** 购物车列表 */
-router.get('/', (req, res) => {
-  const items = Cart.listByUser(req.user.userId);
+router.get('/', async (req, res) => {
+  const items = await Cart.listByUser(req.user.userId);
   res.json(success(items));
 });
 
@@ -28,7 +28,7 @@ router.get('/', (req, res) => {
 router.post('/', [
   body('product_id').isInt({ min: 1 }).withMessage('商品 ID 无效'),
   body('quantity').optional().isInt({ min: 1 }).withMessage('数量无效'),
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ code: 400, message: '参数错误', data: errors.array() });
@@ -36,7 +36,7 @@ router.post('/', [
   const { product_id, quantity = 1 } = req.body;
 
   // 校验商品是否存在且已上架
-  const product = Product.findById(product_id);
+  const product = await Product.findById(product_id);
   if (!product) {
     return res.json(error(404, '商品不存在'));
   }
@@ -44,12 +44,12 @@ router.post('/', [
     return res.json(error(400, '商品已下架'));
   }
 
-  const item = Cart.add(req.user.userId, product_id, quantity);
+  const item = await Cart.add(req.user.userId, product_id, quantity);
   res.json(success(item, '已加入购物车'));
 });
 
 /** 修改购物车项数量 */
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
   const { quantity } = req.body;
 
@@ -57,20 +57,20 @@ router.put('/:id', (req, res) => {
     return res.json(error(400, '数量必须大于 0'));
   }
 
-  Cart.updateQty(id, quantity);
+  await Cart.updateQty(id, quantity);
   res.json(success(null, '已更新'));
 });
 
 /** 删除指定购物车项 */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
-  Cart.remove(id);
+  await Cart.remove(id);
   res.json(success(null, '已删除'));
 });
 
 /** 清空购物车 */
-router.delete('/', (req, res) => {
-  Cart.clearByUser(req.user.userId);
+router.delete('/', async (req, res) => {
+  await Cart.clearByUser(req.user.userId);
   res.json(success(null, '购物车已清空'));
 });
 

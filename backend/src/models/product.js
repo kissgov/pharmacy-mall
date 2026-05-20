@@ -1,11 +1,11 @@
 /**
  * 商品数据模型
  */
-const db = require('../db');
+const pool = require('../db');
 
 const Product = {
   /** 商品列表（支持分类、排序、分页） */
-  list({ category_id, page = 1, page_size = 20, sort } = {}) {
+  async list({ category_id, page = 1, page_size = 20, sort } = {}) {
     const offset = (page - 1) * page_size;
     let where = "WHERE p.status = 'on'";
     const params = [];
@@ -13,7 +13,7 @@ const Product = {
     if (category_id) {
       // 包含子分类：查找该分类及其所有子分类
       const subIds = [category_id];
-      const children = db.prepare('SELECT id FROM categories WHERE parent_id = ?').all(category_id);
+      const [children] = await pool.execute('SELECT id FROM categories WHERE parent_id = ?', [category_id]);
       children.forEach((c) => subIds.push(c.id));
       const placeholders = subIds.map(() => '?').join(',');
       where += ` AND p.category_id IN (${placeholders})`;
@@ -25,119 +25,133 @@ const Product = {
     else if (sort === 'price_desc') orderBy = 'ORDER BY p.price DESC';
     else if (sort === 'sales') orderBy = 'ORDER BY p.sales DESC';
 
-    const list = db.prepare(
+    params.push(page_size, offset);
+    const [list] = await pool.execute(
       `SELECT p.*, c.name AS category_name FROM products p
        LEFT JOIN categories c ON c.id = p.category_id
-       ${where} ${orderBy} LIMIT ? OFFSET ?`
-    ).all(...params, page_size, offset);
+       ${where} ${orderBy} LIMIT ? OFFSET ?`,
+      params
+    );
 
-    const countRow = db.prepare(
-      `SELECT COUNT(*) AS count FROM products p ${where}`
-    ).get(...params);
+    const countParams = params.slice(0, -2); // remove limit/offset
+    const [countRows] = await pool.execute(
+      `SELECT COUNT(*) AS count FROM products p ${where}`,
+      countParams
+    );
 
-    return { list, total: countRow.count };
+    return { list, total: countRows[0].count };
   },
 
   /** 商品搜索 */
-  search(q, page = 1, page_size = 20) {
+  async search(q, page = 1, page_size = 20) {
     const offset = (page - 1) * page_size;
     const keyword = `%${q}%`;
 
-    const list = db.prepare(
+    const [list] = await pool.execute(
       `SELECT p.*, c.name AS category_name FROM products p
        LEFT JOIN categories c ON c.id = p.category_id
        WHERE p.status = 'on' AND (p.name LIKE ? OR p.brand LIKE ? OR p.manufacturer LIKE ?)
-       ORDER BY p.sales DESC LIMIT ? OFFSET ?`
-    ).all(keyword, keyword, keyword, page_size, offset);
+       ORDER BY p.sales DESC LIMIT ? OFFSET ?`,
+      [keyword, keyword, keyword, page_size, offset]
+    );
 
-    const total = db.prepare(
+    const [totalRows] = await pool.execute(
       `SELECT COUNT(*) AS count FROM products p
-       WHERE p.status = 'on' AND (p.name LIKE ? OR p.brand LIKE ? OR p.manufacturer LIKE ?)`
-    ).get(keyword, keyword, keyword).count;
+       WHERE p.status = 'on' AND (p.name LIKE ? OR p.brand LIKE ? OR p.manufacturer LIKE ?)`,
+      [keyword, keyword, keyword]
+    );
 
-    return { list, total };
+    return { list, total: totalRows[0].count };
   },
 
   /** 根据 ID 查找商品 */
-  findById(id) {
-    return db.prepare(
+  async findById(id) {
+    const [rows] = await pool.execute(
       `SELECT p.*, c.name AS category_name FROM products p
        LEFT JOIN categories c ON c.id = p.category_id
-       WHERE p.id = ?`
-    ).get(id);
+       WHERE p.id = ?`,
+      [id]
+    );
+    return rows[0] || null;
   },
 
   /** 创建商品 */
-  create(data) {
-    const stmt = db.prepare(`
-      INSERT INTO products (category_id, name, images, specification, brand, manufacturer,
+  async create(data) {
+    const [result] = await pool.execute(
+      `INSERT INTO products (category_id, name, images, specification, brand, manufacturer,
         price, member_price, stock, is_prescription, usage_dosage, contraindications,
         approval_number, status)
-      VALUES (@category_id, @name, @images, @specification, @brand, @manufacturer,
-        @price, @member_price, @stock, @is_prescription, @usage_dosage, @contraindications,
-        @approval_number, @status)
-    `);
-    const result = stmt.run({
-      category_id: data.category_id,
-      name: data.name,
-      images: data.images || '[]',
-      specification: data.specification || null,
-      brand: data.brand || null,
-      manufacturer: data.manufacturer || null,
-      price: data.price,
-      member_price: data.member_price || null,
-      stock: data.stock || 0,
-      is_prescription: data.is_prescription || 0,
-      usage_dosage: data.usage_dosage || null,
-      contraindications: data.contraindications || null,
-      approval_number: data.approval_number || null,
-      status: data.status || 'on',
-    });
-    return this.findById(result.lastInsertRowid);
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        data.category_id,
+        data.name,
+        data.images || '[]',
+        data.specification || null,
+        data.brand || null,
+        data.manufacturer || null,
+        data.price,
+        data.member_price || null,
+        data.stock || 0,
+        data.is_prescription || 0,
+        data.usage_dosage || null,
+        data.contraindications || null,
+        data.approval_number || null,
+        data.status || 'on',
+      ]
+    );
+    return this.findById(result.insertId);
   },
 
   /** 更新商品 */
-  update(id, data) {
+  async update(id, data) {
     const allowed = ['category_id', 'name', 'images', 'specification', 'brand', 'manufacturer',
       'price', 'member_price', 'stock', 'is_prescription', 'usage_dosage', 'contraindications',
       'approval_number'];
     const fields = [];
-    const values = { id };
+    const values = [];
 
     allowed.forEach((key) => {
       if (data[key] !== undefined) {
-        fields.push(`${key} = @${key}`);
-        values[key] = data[key];
+        fields.push(`${key} = ?`);
+        values.push(data[key]);
       }
     });
 
     if (fields.length === 0) return this.findById(id);
-    fields.push("updated_at = datetime('now')");
+    values.push(id);
 
-    db.prepare(`UPDATE products SET ${fields.join(', ')} WHERE id = @id`).run(values);
+    await pool.execute(`UPDATE products SET ${fields.join(', ')} WHERE id = ?`, values);
     return this.findById(id);
   },
 
   /** 更新商品状态（上架/下架） */
-  updateStatus(id, status) {
-    db.prepare("UPDATE products SET status = ?, updated_at = datetime('now') WHERE id = ?").run(status, id);
+  async updateStatus(id, status) {
+    await pool.execute('UPDATE products SET status = ? WHERE id = ?', [status, id]);
     return this.findById(id);
   },
 
   /** 删除商品 */
-  delete(id) {
-    return db.prepare('DELETE FROM products WHERE id = ?').run(id);
+  async delete(id) {
+    const [result] = await pool.execute('DELETE FROM products WHERE id = ?', [id]);
+    return result;
   },
 
   /** 减少库存 */
-  decreaseStock(id, quantity) {
-    return db.prepare('UPDATE products SET stock = stock - ?, sales = sales + ? WHERE id = ? AND stock >= ?')
-      .run(quantity, quantity, id, quantity);
+  async decreaseStock(id, quantity) {
+    const [result] = await pool.execute(
+      'UPDATE products SET stock = stock - ?, sales = sales + ? WHERE id = ? AND stock >= ?',
+      [quantity, quantity, id, quantity]
+    );
+    return result;
   },
 
   /** 恢复库存 */
-  increaseStock(id, quantity) {
-    return db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?').run(quantity, id);
+  async increaseStock(id, quantity) {
+    const [result] = await pool.execute(
+      'UPDATE products SET stock = stock + ? WHERE id = ?',
+      [quantity, id]
+    );
+    return result;
   },
 };
 

@@ -9,9 +9,9 @@ const { paginated } = require('../../utils/response');
 const router = Router();
 
 /** 用户列表 */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { page, page_size } = req.query;
-  const result = User.list(
+  const result = await User.list(
     page ? parseInt(page, 10) : 1,
     page_size ? parseInt(page_size, 10) : 20
   );

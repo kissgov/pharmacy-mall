@@ -13,20 +13,20 @@ const router = Router();
 router.use(authUser);
 
 /** 处方列表 */
-router.get('/', (req, res) => {
-  const list = Prescription.listByUser(req.user.userId);
+router.get('/', async (req, res) => {
+  const list = await Prescription.listByUser(req.user.userId);
   res.json(success(list));
 });
 
 /** 上传处方 */
 router.post('/', [
   body('images').isArray({ min: 1 }).withMessage('请上传处方图片'),
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ code: 400, message: '参数错误', data: errors.array() });
   }
-  const prescription = Prescription.create(req.user.userId, req.body.images);
+  const prescription = await Prescription.create(req.user.userId, req.body.images);
   res.json(success(prescription, '处方上传成功'));
 });
 

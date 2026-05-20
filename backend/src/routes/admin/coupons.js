@@ -14,14 +14,14 @@ const { success, error } = require('../../utils/response');
 const router = Router();
 
 /** 优惠券列表 */
-router.get('/', (req, res) => {
-  const list = Coupon.listAll();
+router.get('/', async (req, res) => {
+  const list = await Coupon.listAll();
   res.json(success(list));
 });
 
 /** 优惠券详情 */
-router.get('/:id', (req, res) => {
-  const coupon = Coupon.findById(parseInt(req.params.id, 10));
+router.get('/:id', async (req, res) => {
+  const coupon = await Coupon.findById(parseInt(req.params.id, 10));
   if (!coupon) {
     return res.json(error(404, '优惠券不存在'));
   }
@@ -34,31 +34,31 @@ router.post('/', [
   body('value').isFloat({ min: 0 }).withMessage('请输入有效面值'),
   body('valid_from').notEmpty().withMessage('请选择生效时间'),
   body('valid_to').notEmpty().withMessage('请选择失效时间'),
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ code: 400, message: '参数错误', data: errors.array() });
   }
-  const coupon = Coupon.create(req.body);
+  const coupon = await Coupon.create(req.body);
   res.json(success(coupon, '优惠券已创建'));
 });
 
 /** 更新优惠券 */
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
-  const existing = Coupon.findById(id);
+  const existing = await Coupon.findById(id);
   if (!existing) {
     return res.json(error(404, '优惠券不存在'));
   }
 
-  const coupon = Coupon.update(id, req.body);
+  const coupon = await Coupon.update(id, req.body);
   res.json(success(coupon, '优惠券已更新'));
 });
 
 /** 删除优惠券 */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
-  Coupon.delete(id);
+  await Coupon.delete(id);
   res.json(success(null, '优惠券已删除'));
 });
 

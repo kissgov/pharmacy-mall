@@ -6,7 +6,7 @@ const { Router } = require('express');
 const { body, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const db = require('../../db');
+const pool = require('../../db');
 const config = require('../../config');
 const { success, error } = require('../../utils/response');
 
@@ -16,18 +16,19 @@ const router = Router();
 router.post('/login', [
   body('username').notEmpty().withMessage('请输入用户名'),
   body('password').notEmpty().withMessage('请输入密码'),
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ code: 400, message: '参数错误', data: errors.array() });
   }
   const { username, password } = req.body;
 
-  const admin = db.prepare('SELECT * FROM admin_users WHERE username = ?').get(username);
-  if (!admin) {
+  const [adminRows] = await pool.execute('SELECT * FROM admin_users WHERE username = ?', [username]);
+  if (adminRows.length === 0) {
     return res.json(error(401, '用户名或密码错误'));
   }
 
+  const admin = adminRows[0];
   const valid = bcrypt.compareSync(password, admin.password_hash);
   if (!valid) {
     return res.json(error(401, '用户名或密码错误'));

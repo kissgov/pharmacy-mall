@@ -1,67 +1,71 @@
 /**
  * 用户数据模型
  */
-const db = require('../db');
+const pool = require('../db');
 
 const User = {
   /** 根据 openid 查找用户 */
-  findByOpenid(openid) {
-    return db.prepare('SELECT * FROM users WHERE openid = ?').get(openid);
+  async findByOpenid(openid) {
+    const [rows] = await pool.execute('SELECT * FROM users WHERE openid = ?', [openid]);
+    return rows[0] || null;
   },
 
   /** 根据 ID 查找用户 */
-  findById(id) {
-    return db.prepare('SELECT id, openid, nickname, avatar_url, phone, member_level, points, created_at, updated_at FROM users WHERE id = ?').get(id);
+  async findById(id) {
+    const [rows] = await pool.execute(
+      'SELECT id, openid, nickname, avatar_url, phone, member_level, points, created_at, updated_at FROM users WHERE id = ?',
+      [id]
+    );
+    return rows[0] || null;
   },
 
   /** 创建用户 */
-  create(data) {
-    const stmt = db.prepare(`
-      INSERT INTO users (openid, nickname, avatar_url, phone, member_level, points)
-      VALUES (@openid, @nickname, @avatar_url, @phone, @member_level, @points)
-    `);
-    const result = stmt.run({
-      openid: data.openid,
-      nickname: data.nickname || null,
-      avatar_url: data.avatar_url || null,
-      phone: data.phone || null,
-      member_level: data.member_level || 'normal',
-      points: data.points || 0,
-    });
-    return this.findById(result.lastInsertRowid);
+  async create(data) {
+    const [result] = await pool.execute(
+      `INSERT INTO users (openid, nickname, avatar_url, phone, member_level, points)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        data.openid,
+        data.nickname || null,
+        data.avatar_url || null,
+        data.phone || null,
+        data.member_level || 'normal',
+        data.points || 0,
+      ]
+    );
+    return this.findById(result.insertId);
   },
 
   /** 更新用户信息 */
-  update(id, data) {
+  async update(id, data) {
     const fields = [];
-    const values = {};
+    const values = [];
 
-    if (data.nickname !== undefined) { fields.push('nickname = @nickname'); values.nickname = data.nickname; }
-    if (data.avatar_url !== undefined) { fields.push('avatar_url = @avatar_url'); values.avatar_url = data.avatar_url; }
-    if (data.phone !== undefined) { fields.push('phone = @phone'); values.phone = data.phone; }
+    if (data.nickname !== undefined) { fields.push('nickname = ?'); values.push(data.nickname); }
+    if (data.avatar_url !== undefined) { fields.push('avatar_url = ?'); values.push(data.avatar_url); }
+    if (data.phone !== undefined) { fields.push('phone = ?'); values.push(data.phone); }
 
     if (fields.length === 0) return this.findById(id);
 
-    fields.push("updated_at = datetime('now')");
-    values.id = id;
-
-    db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = @id`).run(values);
+    values.push(id);
+    await pool.execute(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
     return this.findById(id);
   },
 
   /** 分页查询用户列表 */
-  list(page = 1, pageSize = 20) {
+  async list(page = 1, pageSize = 20) {
     const offset = (page - 1) * pageSize;
-    const list = db.prepare(
-      'SELECT id, openid, nickname, avatar_url, phone, member_level, points, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?'
-    ).all(pageSize, offset);
-    const total = db.prepare('SELECT COUNT(*) AS count FROM users').get().count;
-    return { list, total };
+    const [list] = await pool.execute(
+      'SELECT id, openid, nickname, avatar_url, phone, member_level, points, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      [pageSize, offset]
+    );
+    const [countRows] = await pool.execute('SELECT COUNT(*) AS count FROM users');
+    return { list, total: countRows[0].count };
   },
 
   /** 添加积分 */
-  addPoints(id, points) {
-    db.prepare("UPDATE users SET points = points + ?, updated_at = datetime('now') WHERE id = ?").run(points, id);
+  async addPoints(id, points) {
+    await pool.execute('UPDATE users SET points = points + ? WHERE id = ?', [points, id]);
     return this.findById(id);
   },
 };

@@ -25,7 +25,7 @@ router.post('/', [
   body('address_id').isInt({ min: 1 }).withMessage('请选择收货地址'),
   body('cart_item_ids').isArray({ min: 1 }).withMessage('请选择商品'),
   body('coupon_id').optional({ nullable: true }).isInt(),
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ code: 400, message: '参数错误', data: errors.array() });
@@ -35,7 +35,7 @@ router.post('/', [
 
   try {
     // 1. 校验收货地址
-    const address = Address.findById(address_id);
+    const address = await Address.findById(address_id);
     if (!address || address.user_id !== userId) {
       return res.json(error(400, '收货地址无效'));
     }
@@ -46,7 +46,7 @@ router.post('/', [
     });
 
     // 2. 获取购物车项并校验
-    const cartItems = Cart.findByIds(cart_item_ids, userId);
+    const cartItems = await Cart.findByIds(cart_item_ids, userId);
     if (cartItems.length === 0) {
       return res.json(error(400, '购物车项无效'));
     }
@@ -89,7 +89,7 @@ router.post('/', [
     let userCouponId = null;
 
     if (coupon_id) {
-      const userCoupons = Coupon.listByUser(userId, 'unused');
+      const userCoupons = await Coupon.listByUser(userId, 'unused');
       const uc = userCoupons.find((c) => c.coupon_id === coupon_id);
 
       if (!uc) {
@@ -111,7 +111,7 @@ router.post('/', [
     const payAmount = parseFloat((totalAmount - discountAmount + freight).toFixed(2));
 
     // 5. 创建订单（事务）
-    const order = Order.create({
+    const order = await Order.create({
       userId,
       addressSnapshot,
       items,
@@ -134,9 +134,9 @@ router.post('/', [
 });
 
 /** 订单列表 */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { status, page, page_size } = req.query;
-  const result = Order.listByUser(
+  const result = await Order.listByUser(
     req.user.userId,
     status,
     page ? parseInt(page, 10) : 1,
@@ -146,8 +146,8 @@ router.get('/', (req, res) => {
 });
 
 /** 订单详情 */
-router.get('/:id', (req, res) => {
-  const order = Order.findById(parseInt(req.params.id, 10));
+router.get('/:id', async (req, res) => {
+  const order = await Order.findById(parseInt(req.params.id, 10));
   if (!order || order.user_id !== req.user.userId) {
     return res.json(error(404, '订单不存在'));
   }
@@ -155,9 +155,9 @@ router.get('/:id', (req, res) => {
 });
 
 /** 模拟支付 */
-router.put('/:id/pay', (req, res) => {
+router.put('/:id/pay', async (req, res) => {
   const orderId = parseInt(req.params.id, 10);
-  const order = Order.findById(orderId);
+  const order = await Order.findById(orderId);
   if (!order || order.user_id !== req.user.userId) {
     return res.json(error(404, '订单不存在'));
   }
@@ -165,20 +165,20 @@ router.put('/:id/pay', (req, res) => {
     return res.json(error(400, '当前订单状态不可支付'));
   }
 
-  const updated = Order.updateStatus(orderId, 'paid');
+  const updated = await Order.updateStatus(orderId, 'paid');
   res.json(success(updated, '支付成功'));
 });
 
 /** 取消订单 */
-router.put('/:id/cancel', (req, res) => {
+router.put('/:id/cancel', async (req, res) => {
   const orderId = parseInt(req.params.id, 10);
-  const order = Order.findById(orderId);
+  const order = await Order.findById(orderId);
   if (!order || order.user_id !== req.user.userId) {
     return res.json(error(404, '订单不存在'));
   }
 
   try {
-    const updated = Order.cancel(orderId);
+    const updated = await Order.cancel(orderId);
     res.json(success(updated, '订单已取消'));
   } catch (err) {
     res.json(error(400, err.message));
@@ -186,9 +186,9 @@ router.put('/:id/cancel', (req, res) => {
 });
 
 /** 确认收货 */
-router.put('/:id/confirm', (req, res) => {
+router.put('/:id/confirm', async (req, res) => {
   const orderId = parseInt(req.params.id, 10);
-  const order = Order.findById(orderId);
+  const order = await Order.findById(orderId);
   if (!order || order.user_id !== req.user.userId) {
     return res.json(error(404, '订单不存在'));
   }
@@ -196,7 +196,7 @@ router.put('/:id/confirm', (req, res) => {
     return res.json(error(400, '当前订单状态不可确认收货'));
   }
 
-  const updated = Order.updateStatus(orderId, 'completed');
+  const updated = await Order.updateStatus(orderId, 'completed');
   res.json(success(updated, '已确认收货'));
 });
 

@@ -1,5 +1,6 @@
 <view class="card" bindtap="onTap">
-  <image class="img" src="{{product.images ? product.images[0] || product.images : '/assets/placeholder.png'}}" mode="aspectFill" lazy-load />
+  <image wx:if="{{product.images && product.images.length && product.images[0]}}" class="img" src="{{product.images[0]}}" mode="aspectFill" lazy-load />
+  <view wx:else class="img-placeholder">💊</view>
   <view class="info">
     <text class="name">{{product.name}}</text>
     <text class="spec" wx:if="{{product.specification}}">{{product.specification}}</text>

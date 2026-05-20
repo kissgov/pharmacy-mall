@@ -1,8 +1,9 @@
 <view class="cart-item">
   <view class="check" bindtap="onToggle">
-    <image src="{{checked ? '/assets/checked.png' : '/assets/unchecked.png'}}" class="check-icon" />
+    <text class="check-icon">{{checked ? '✅' : '⬜'}}</text>
   </view>
-  <image class="img" src="{{item.image || '/assets/placeholder.png'}}" mode="aspectFill" />
+  <image wx:if="{{item.image}}" class="img" src="{{item.image}}" mode="aspectFill" />
+  <view wx:else class="img-placeholder">📦</view>
   <view class="info">
     <text class="name">{{item.product_name}}</text>
     <view class="price-row">

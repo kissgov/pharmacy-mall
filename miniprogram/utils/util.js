@@ -20,7 +20,10 @@ function formatPrice(price) {
  */
 function formatDate(dateStr) {
   if (!dateStr) return '';
-  const d = new Date(dateStr);
+  // iOS 兼容：将 "2026-05-20 12:59:18" 转为 "2026-05-20T12:59:18"
+  const normalized = String(dateStr).replace(' ', 'T');
+  const d = new Date(normalized);
+  if (isNaN(d.getTime())) return String(dateStr);
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
@@ -30,7 +33,9 @@ function formatDate(dateStr) {
  */
 function formatDateOnly(dateStr) {
   if (!dateStr) return '';
-  const d = new Date(dateStr);
+  const normalized = String(dateStr).replace(' ', 'T');
+  const d = new Date(normalized);
+  if (isNaN(d.getTime())) return String(dateStr);
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }

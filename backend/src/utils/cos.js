@@ -1,6 +1,7 @@
 /**
  * COS 对象存储模块（云托管内网鉴权）
  * 通过微信云托管内部 API 自动获取临时凭证
+ * 上传时自动初始化，无需手动等待
  */
 
 const COS = require('cos-nodejs-sdk-v5');
@@ -12,6 +13,7 @@ const cosConfig = {
 };
 
 let cos = null;
+let initPromise = null;
 
 /**
  * 云托管内部 HTTP 请求
@@ -37,45 +39,48 @@ function internalCall(options) {
 }
 
 /**
- * 初始化 COS SDK（调用云托管内部接口获取临时密钥）
+ * 初始化 COS SDK（幂等，重复调用不重复初始化）
  */
 async function initCOS() {
-  try {
-    const authRes = await internalCall({
-      url: 'http://api.weixin.qq.com/_/cos/getauth',
-      method: 'GET',
-    });
-    const info = JSON.parse(authRes);
-    const auth = {
-      TmpSecretId: info.TmpSecretId,
-      TmpSecretKey: info.TmpSecretKey,
-      SecurityToken: info.Token,
-      ExpiredTime: info.ExpiredTime,
-    };
-    cos = new COS({
-      getAuthorization: function (_options, callback) {
-        callback(auth);
-      },
-    });
-    console.log('COS 初始化成功');
-    return true;
-  } catch (e) {
-    console.log('COS 初始化失败（将回退到本地存储）:', e.message);
-    return false;
-  }
+  if (cos) return true;
+  if (initPromise) return initPromise;
+  
+  initPromise = (async () => {
+    try {
+      const authRes = await internalCall({
+        url: 'http://api.weixin.qq.com/_/cos/getauth',
+        method: 'GET',
+      });
+      const info = JSON.parse(authRes);
+      cos = new COS({
+        getAuthorization: function (_options, callback) {
+          callback({
+            TmpSecretId: info.TmpSecretId,
+            TmpSecretKey: info.TmpSecretKey,
+            SecurityToken: info.Token,
+            ExpiredTime: info.ExpiredTime,
+          });
+        },
+      });
+      console.log('COS 初始化成功');
+      return true;
+    } catch (e) {
+      console.log('COS 初始化失败:', e.message);
+      initPromise = null;
+      return false;
+    }
+  })();
+  return initPromise;
 }
 
 /**
- * 上传文件到 COS
- * @param {string} cloudPath - COS 对象路径，如 'products/xxx.jpg'
- * @param {string} localPath - 本地文件路径
- * @returns {string|null} COS 访问 URL
+ * 上传文件到 COS（自动等待初始化）
  */
 async function uploadFile(cloudPath, localPath) {
-  if (!cos) return null;
+  const ok = await initCOS();
+  if (!ok || !cos) return null;
   try {
     const fs = require('fs');
-    // 获取 metaid
     const metaRes = await internalCall({
       url: 'http://api.weixin.qq.com/_/cos/metaid/encode',
       method: 'POST',
@@ -100,7 +105,6 @@ async function uploadFile(cloudPath, localPath) {
     });
 
     if (result.statusCode === 200) {
-      // 返回 COS 访问 URL（云托管内网）
       return `https://${cosConfig.Bucket}.cos.${cosConfig.Region}.myqcloud.com/${cloudPath}`;
     }
     return null;
@@ -110,9 +114,6 @@ async function uploadFile(cloudPath, localPath) {
   }
 }
 
-/**
- * 获取 COS 公开访问 URL
- */
 function getCOSUrl(cloudPath) {
   if (!cloudPath) return '';
   if (cloudPath.startsWith('http')) return cloudPath;

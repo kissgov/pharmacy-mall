@@ -1,68 +1,30 @@
 /**
- * 登录逻辑
- * 管理微信登录流程与 token 持久化
+ * 用户认证模块（云托管模式）
+ * 通过 wx.cloud.callContainer 内网通信，自动携带用户 openid
+ * 无需手动 wx.login 换取 token
  */
 
 const api = require('./api');
 
 /**
- * 微信登录
- * 使用 wx.login 获取 code 后调后端换取 token
+ * 获取用户信息（从后端 /auth/profile 读取）
  */
-function login() {
-  return new Promise((resolve, reject) => {
-    wx.login({
-      success(res) {
-        if (res.code) {
-          api.post('/auth/login', { code: 'mock_' + res.code })
-            .then((data) => {
-              wx.setStorageSync('token', data.token);
-              const app = getApp();
-              app.globalData.token = data.token;
-              app.globalData.userInfo = data.user;
-              resolve(data.user);
-            })
-            .catch(reject);
-        } else {
-          reject(new Error('登录失败'));
-        }
-      },
-      fail: reject,
-    });
-  });
+function getProfile() {
+  return api.get('/auth/profile').then((user) => {
+    const app = getApp();
+    app.globalData.userInfo = user;
+    return user;
+  }).catch(() => null);
 }
 
 /**
- * 检查登录态
- * 有 token 时直接验证有效性
+ * 检查/初始化登录态
+ * 云托管模式下，首次调用自动创建用户
  */
 function checkLogin() {
-  const token = wx.getStorageSync('token');
-  if (token) {
-    return api.get('/auth/profile')
-      .then((user) => {
-        const app = getApp();
-        app.globalData.userInfo = user;
-        app.globalData.token = token;
-        return user;
-      })
-      .catch(() => {
-        wx.removeStorageSync('token');
-        return null;
-      });
-  }
-  return Promise.resolve(null);
+  const app = getApp();
+  if (app.globalData.userInfo) return Promise.resolve(app.globalData.userInfo);
+  return getProfile();
 }
 
-/**
- * 确保登录态
- * 未登录则调起登录流程
- */
-function ensureLogin() {
-  return checkLogin().then((user) => {
-    if (user) return user;
-    return login();
-  });
-}
-
-module.exports = { login, checkLogin, ensureLogin };
+module.exports = { getProfile, checkLogin };

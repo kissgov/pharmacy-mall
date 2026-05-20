@@ -1,42 +1,19 @@
 /**
- * 网络请求封装
- * 统一处理 token、错误格式、图片 URL 前缀
+ * API 请求封装
+ * 通过微信云托管内网通信（wx.cloud.callContainer），自动携带用户身份
  */
-
 const BASE_URL = 'https://pharmary-mall-api-239896-5-1309632689.sh.run.tcloudbase.com';
-const API_URL = BASE_URL + '/api';
+const API_PREFIX = '/api';
 
-/**
- * 通用请求方法
- */
 function request(options) {
-  const token = wx.getStorageSync('token');
-
-  return new Promise((resolve, reject) => {
-    wx.request({
-      url: API_URL + options.url,
-      method: options.method || 'GET',
-      data: options.data,
-      header: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: 'Bearer ' + token } : {}),
-      },
-      success(res) {
-        const body = res.data;
-        if (res.statusCode === 200 && body.code === 200) {
-          resolve(body.data);
-        } else {
-          if (res.statusCode === 401 || body.code === 401) {
-            wx.removeStorageSync('token');
-          }
-          reject(body || { code: res.statusCode, message: '请求失败' });
-        }
-      },
-      fail(err) {
-        wx.showToast({ title: '网络异常', icon: 'none' });
-        reject(err);
-      },
-    });
+  const app = getApp();
+  return app.call({
+    path: API_PREFIX + options.url,
+    method: options.method || 'GET',
+    data: options.data,
+  }).then((data) => {
+    if (data && data.code === 200) return data.data;
+    throw data || { code: 500, message: '请求失败' };
   });
 }
 
@@ -48,11 +25,10 @@ const api = {
 };
 
 /**
- * 将相对图片路径转为完整 URL
- * 如果路径已经是完整 URL 则直接返回
+ * 将相对图片路径转为完整云托管 URL
  */
 function imageUrl(path) {
-  if (!path) return '/assets/placeholder.png';
+  if (!path) return '';
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   if (path.startsWith('/')) return BASE_URL + path;
   return BASE_URL + '/' + path;

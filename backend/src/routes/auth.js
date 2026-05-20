@@ -1,6 +1,6 @@
 /**
  * 用户认证路由
- * POST /api/auth/login  — 微信登录（模拟）
+ * POST /api/auth/login  — 云托管自动登录（x-wx-openid）/ 兼容旧版 code 登录
  * GET  /api/auth/profile — 获取用户信息
  * PUT  /api/auth/profile — 更新用户信息
  */
@@ -15,29 +15,39 @@ const { success, error } = require('../utils/response');
 const router = Router();
 
 /**
- * 微信登录（模拟）
- * 接收 code，模拟微信 code2Session 流程
- * 如果 code 以 "mock_" 开头，用 code 作为 openid；否则生成随机 openid
+ * 用户登录（支持两种模式）
+ * 模式1（云托管）：通过 x-wx-openid 头自动识别，无需传参
+ * 模式2（兼容）：传入 code 模拟登录
  */
-router.post('/login', [
-  body('code').notEmpty().withMessage('缺少登录凭证 code'),
-], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ code: 400, message: '参数错误', data: errors.array() });
-  }
-  const { code, nickname, avatar_url } = req.body;
+router.post('/login', async (req, res) => {
+  // 云托管模式：从请求头获取 openid
+  const cloudOpenid = req.headers['x-wx-openid'] || req.headers['X-WX-OPENID'];
 
-  // 模拟微信登录：从 code 提取或生成 openid
+  if (cloudOpenid) {
+    let user = await User.findByOpenid(cloudOpenid);
+    if (!user) {
+      user = await User.create({ openid: cloudOpenid, nickname: `用户${Date.now().toString(36)}` });
+    }
+    const token = jwt.sign(
+      { userId: user.id, openid: user.openid, type: 'user' },
+      config.jwtSecret,
+      { expiresIn: config.jwtExpiresIn }
+    );
+    return res.json(success({ token, user }, '登录成功'));
+  }
+
+  // 兼容模式：通过 code 模拟登录
+  const { code, nickname, avatar_url } = req.body;
   let openid;
   if (code && code.startsWith('mock_')) {
     openid = code;
-  } else {
-    // 生成随机 openid
+  } else if (code) {
     openid = 'user_' + Math.random().toString(36).slice(2, 14);
+  } else {
+    // 无 openid 且无 code — 本地开发模式，生成临时用户
+    openid = 'dev_user_' + Math.random().toString(36).slice(2, 10);
   }
 
-  // 查找或创建用户
   let user = await User.findByOpenid(openid);
   if (!user) {
     user = await User.create({
@@ -49,13 +59,11 @@ router.post('/login', [
     user = await User.update(user.id, { nickname, avatar_url });
   }
 
-  // 签发 JWT
   const token = jwt.sign(
     { userId: user.id, openid: user.openid, type: 'user' },
     config.jwtSecret,
     { expiresIn: config.jwtExpiresIn }
   );
-
   res.json(success({ token, user }, '登录成功'));
 });
 
@@ -69,20 +77,9 @@ router.get('/profile', authUser, async (req, res) => {
 });
 
 /** 更新当前用户信息 */
-router.put('/profile', authUser, [
-  body('nickname').optional().isString(),
-  body('avatar_url').optional().isString(),
-  body('phone').optional().isString(),
-], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ code: 400, message: '参数错误', data: errors.array() });
-  }
-  const user = await User.update(req.user.userId, {
-    nickname: req.body.nickname,
-    avatar_url: req.body.avatar_url,
-    phone: req.body.phone,
-  });
+router.put('/profile', authUser, async (req, res) => {
+  const { nickname, avatar_url, phone } = req.body;
+  const user = await User.update(req.user.userId, { nickname, avatar_url, phone });
   res.json(success(user, '更新成功'));
 });
 

@@ -1,30 +1,61 @@
 /**
  * 用户认证模块（云托管模式）
- * 通过 wx.cloud.callContainer 内网通信，自动携带用户 openid
- * 无需手动 wx.login 换取 token
+ * openid 由 wx.cloud.callContainer 自动传入，无需手动登录
  */
 
 const api = require('./api');
 
 /**
- * 获取用户信息（从后端 /auth/profile 读取）
+ * 静默登录：通过后端初始化/获取用户信息
+ * 后端根据 x-wx-openid 自动创建或返回已有用户
  */
-function getProfile() {
-  return api.get('/auth/profile').then((user) => {
+async function silentLogin() {
+  try {
+    const user = await api.post('/auth/login', {});
     const app = getApp();
     app.globalData.userInfo = user;
+    wx.setStorageSync('userInfo', user);
     return user;
-  }).catch(() => null);
+  } catch (e) {
+    console.log('登录失败:', e);
+    return null;
+  }
 }
 
 /**
- * 检查/初始化登录态
- * 云托管模式下，首次调用自动创建用户
+ * 检查当前登录态（缓存优先）
  */
 function checkLogin() {
   const app = getApp();
-  if (app.globalData.userInfo) return Promise.resolve(app.globalData.userInfo);
-  return getProfile();
+  if (app.globalData.userInfo && app.globalData.userInfo.id) {
+    return Promise.resolve(app.globalData.userInfo);
+  }
+  const cached = wx.getStorageSync('userInfo');
+  if (cached && cached.id) {
+    app.globalData.userInfo = cached;
+    return Promise.resolve(cached);
+  }
+  return silentLogin();
 }
 
-module.exports = { getProfile, checkLogin };
+/**
+ * 更新用户资料（昵称、头像、手机号）
+ */
+async function updateProfile(data) {
+  const user = await api.put('/auth/profile', data);
+  const app = getApp();
+  app.globalData.userInfo = user;
+  wx.setStorageSync('userInfo', user);
+  return user;
+}
+
+/**
+ * 获取微信用户信息（昵称+头像）
+ * 使用 button open-type="chooseAvatar" + input type="nickname" 新方案
+ */
+function getWxUserInfo() {
+  const cached = wx.getStorageSync('userInfo');
+  return cached || {};
+}
+
+module.exports = { checkLogin, silentLogin, updateProfile, getWxUserInfo };

@@ -11,10 +11,11 @@ backend/data/
 .env
 backend/.env
 
-# Uploaded files (keep placeholder)
+# Uploaded files (keep placeholder and gitkeep)
 backend/uploads/*
 !backend/uploads/.gitkeep
 !backend/uploads/**/.gitkeep
+!backend/uploads/banners/placeholder-banner.svg
 
 # Build output
 admin/dist/

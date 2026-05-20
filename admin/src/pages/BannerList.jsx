@@ -55,7 +55,14 @@ export default function BannerList() {
           {banners.map((b) => (
             <Grid item xs={12} sm={6} md={4} key={b.id}>
               <Card>
-                <CardMedia component="img" height="140" image={b.image_url} alt={b.title} sx={{ objectFit: 'cover', bgcolor: '#f5f5f5' }} />
+                {b.image_url ? (
+                  <CardMedia component="img" height="140" image={b.image_url} alt={b.title} sx={{ objectFit: 'cover', bgcolor: '#f5f5f5' }} />
+                ) : (
+                  <Box sx={{ height: 140, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #07c160, #05a04a)' }}>
+                    <Typography fontSize={40}>🎁</Typography>
+                    <Typography color="white" fontWeight="bold" fontSize={14} mt={0.5}>{b.title}</Typography>
+                  </Box>
+                )}
                 <CardContent sx={{ pb: 0 }}>
                   <Typography variant="subtitle1" fontWeight="bold">{b.title}</Typography>
                   <Typography variant="body2" color="text.secondary">排序: {b.sort}</Typography>

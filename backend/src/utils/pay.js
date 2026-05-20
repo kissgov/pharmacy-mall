@@ -69,16 +69,17 @@ async function unifiedOrder(opts) {
     out_trade_no: opts.outTradeNo,
     sub_mch_id: MCH_ID,
     total_fee: opts.totalFee,
+    trade_type: 'JSAPI',        // 小程序固定 JSAPI
     openid: opts.openid,
     spbill_create_ip: opts.clientIp || '127.0.0.1',
     env_id: opts.envId,
-    callback_type: 2, // 云托管服务接收回调
+    callback_type: 2,            // 云托管服务接收回调
     container: {
       service: opts.serviceName,
-      path: '/api/pay/callback', // 支付回调路径
+      path: '/api/pay/callback',
     },
   };
-  return callPay('unifiedorder', payreq);
+  return callPay('unifiedOrder', payreq);
 }
 
 /**

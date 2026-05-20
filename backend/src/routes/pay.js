@@ -50,18 +50,22 @@ router.post('/unified', authUser, async (req, res) => {
 
     console.log('[支付] 统一下单结果:', JSON.stringify(result));
 
-    if (result.return_code === 'SUCCESS' && result.result_code === 'SUCCESS') {
-      // 返回支付参数给小程序调起 wx.requestPayment
+    // API 返回结构：{ errcode, errmsg, respdata: { return_code, result_code, payment } }
+    const resp = result.respdata || result;
+    if (resp.return_code === 'SUCCESS' && resp.result_code === 'SUCCESS') {
+      // 直接透传 payment 对象给小程序 wx.requestPayment
+      const payment = resp.payment || {};
       res.json(success({
-        timeStamp: result.timeStamp || String(Math.floor(Date.now() / 1000)),
-        nonceStr: result.nonce_str || result.nonceStr || '',
-        package: result.package || `prepay_id=${result.prepay_id}`,
-        signType: result.sign_type || result.signType || 'MD5',
-        paySign: result.pay_sign || result.paySign || result.sign || '',
+        timeStamp: payment.timeStamp || '',
+        nonceStr: payment.nonceStr || '',
+        package: payment.package || '',
+        signType: payment.signType || 'MD5',
+        paySign: payment.paySign || '',
         order_no: order.order_no,
       }, '预下单成功'));
     } else {
-      res.json(error(500, result.return_msg || result.err_code_des || '支付预下单失败'));
+      const errMsg = resp.return_msg || result.return_msg || result.errmsg || '支付预下单失败';
+      res.json(error(500, errMsg));
     }
   } catch (err) {
     console.error('[支付] 异常:', err.message);

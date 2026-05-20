@@ -1,12 +1,14 @@
 /**
- * API 请求封装
- * 通过微信云托管内网通信（wx.cloud.callContainer），自动携带用户身份
+ * API 请求封装（纯微信云托管内网通信）
  */
 const BASE_URL = 'https://pharmary-mall-api-239896-5-1309632689.sh.run.tcloudbase.com';
 const API_PREFIX = '/api';
 
 function request(options) {
   const app = getApp();
+  if (!app || !app.call) {
+    return Promise.reject(new Error('云托管未初始化'));
+  }
   return app.call({
     path: API_PREFIX + options.url,
     method: options.method || 'GET',
@@ -24,12 +26,9 @@ const api = {
   del(url, data) { return request({ url, method: 'DELETE', data }); },
 };
 
-/**
- * 将相对图片路径转为完整云托管 URL
- */
 function imageUrl(path) {
   if (!path) return '';
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (path.startsWith('http')) return path;
   if (path.startsWith('/')) return BASE_URL + path;
   return BASE_URL + '/' + path;
 }

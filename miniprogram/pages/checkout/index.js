@@ -114,10 +114,7 @@ Page({
             }, 1000);
           },
           fail: () => {
-            // 用户取消支付 → 关闭微信侧订单，释放 order_no，可重新发起
-            api.post('/pay/close', { order_id: order.id }).finally(() => {
-              this.setData({ submitting: false });
-            });
+            // ④ 用户取消支付，不做额外操作，可再次提交
           },
         });
       }).catch((err) => {

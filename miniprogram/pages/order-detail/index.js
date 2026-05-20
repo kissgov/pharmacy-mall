@@ -46,8 +46,7 @@ Page({
           that.loadOrder(id);
         },
         fail: () => {
-          // 用户取消支付 → 关闭微信侧订单，释放 order_no
-          api.post('/pay/close', { order_id: id });
+          // ④ 用户取消支付，可重新点击支付
         },
       });
     }).catch((err) => {

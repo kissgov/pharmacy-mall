@@ -12,6 +12,14 @@
 .search-input .placeholder { font-size: 28rpx; color: #bbb; }
 .banner-swiper { width: 100%; height: 320rpx; }
 .banner-img { width: 100%; height: 100%; }
+.banner-placeholder {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #07c160, #05a04a);
+}
+.banner-emoj { font-size: 80rpx; }
+.banner-text { font-size: 28rpx; color: #fff; font-weight: bold; margin-top: 8rpx; }
 .category-grid {
   display: flex; flex-wrap: wrap;
   padding: 24rpx 16rpx; background: #fff;
@@ -21,7 +29,7 @@
   width: 25%; display: flex; flex-direction: column;
   align-items: center; padding: 16rpx 0;
 }
-.cat-icon { width: 80rpx; height: 80rpx; border-radius: 50%; background: #f0faf4; }
+.cat-icon { font-size: 48rpx; text-align: center; line-height: 80rpx; width: 80rpx; height: 80rpx; border-radius: 50%; background: #f0faf4; }
 .cat-name { font-size: 24rpx; color: #333; margin-top: 10rpx; }
 .section { padding: 0 16rpx; }
 .section-header {

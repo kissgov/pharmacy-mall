@@ -192,8 +192,8 @@ function seedBanners() {
   }
 
   const banners = [
-    { title: '新用户首单立减10元', image_url: 'https://via.placeholder.com/750x300/07c160/ffffff?text=New+User+Discount', sort: 1 },
-    { title: '会员专享 全场9折', image_url: 'https://via.placeholder.com/750x300/ff6b35/ffffff?text=Member+Discount', sort: 2 },
+    { title: '新用户首单立减10元', image_url: '', sort: 1 },
+    { title: '会员专享 全场9折', image_url: '', sort: 2 },
   ];
 
   const insert = db.prepare("INSERT INTO banners (title, image_url, sort, status) VALUES (?, ?, ?, 'active')");

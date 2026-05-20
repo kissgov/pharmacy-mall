@@ -10,14 +10,18 @@
   <!-- Banner 轮播 -->
   <swiper wx:if="{{banners.length}}" class="banner-swiper" indicator-dots autoplay circular interval="3000">
     <swiper-item wx:for="{{banners}}" wx:key="id">
-      <image src="{{item.image_url}}" mode="aspectFill" class="banner-img" data-link="{{item.link_url}}" bindtap="onBannerTap" />
+      <view class="banner-placeholder" wx:if="{{!item.image_url || item.image_url.indexOf('placeholder.com')!==-1}}">
+        <text class="banner-emoj">{{index===0?'🎁':'💎'}}</text>
+        <text class="banner-text">{{item.title}}</text>
+      </view>
+      <image wx:else src="{{item.image_url}}" mode="aspectFill" class="banner-img" binderror="onBannerError" data-index="{{index}}" />
     </swiper-item>
   </swiper>
 
   <!-- 分类入口 -->
   <view class="category-grid">
     <view class="category-item" wx:for="{{categories}}" wx:key="id" bindtap="onCategoryTap">
-      <image src="{{item.icon || '/assets/category-default.png'}}" class="cat-icon" mode="aspectFit" />
+      <text class="cat-icon">{{item.icon || '📦'}}</text>
       <text class="cat-name">{{item.name}}</text>
     </view>
   </view>

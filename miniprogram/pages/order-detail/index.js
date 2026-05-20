@@ -32,37 +32,25 @@ Page({
   },
 
   onPay() {
-    const { order } = this.data;
+    const { id } = this.data.order;
     const that = this;
-
-    // 优先复用已存的支付参数，避免重复调 JSAPI 下单
-    let payParams = null;
-    try { payParams = typeof order.pay_params === 'string' ? JSON.parse(order.pay_params) : order.pay_params; } catch (_) {}
-
-    const doPay = (params) => {
+    // 每次重试都重新调 JSAPI 下单获取新 prepay_id（官方要求）
+    api.post('/pay/unified', { order_id: id }).then((payParams) => {
       wx.requestPayment({
-        timeStamp: params.timeStamp,
-        nonceStr: params.nonceStr,
-        package: params.package,
-        signType: params.signType || 'MD5',
-        paySign: params.paySign,
+        timeStamp: payParams.timeStamp,
+        nonceStr: payParams.nonceStr,
+        package: payParams.package,
+        signType: payParams.signType || 'MD5',
+        paySign: payParams.paySign,
         success() {
           wx.showToast({ title: '支付成功', icon: 'success' });
-          that.loadOrder(order.id);
+          that.loadOrder(id);
         },
-        fail: () => {
-          // ④ 取消后可再次点击支付
-        },
+        fail: () => {},
       });
-    };
-
-    if (payParams && payParams.package && payParams.package !== 'prepay_id=') {
-      doPay(payParams);
-    } else {
-      api.post('/pay/unified', { order_id: order.id }).then(doPay).catch((err) => {
-        wx.showToast({ title: err.message || '支付失败', icon: 'none' });
-      });
-    }
+    }).catch((err) => {
+      wx.showToast({ title: err.message || '支付失败', icon: 'none' });
+    });
   },
 
   onCancel() {

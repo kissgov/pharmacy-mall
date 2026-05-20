@@ -72,7 +72,7 @@ router.post('/unified', authUser, async (req, res) => {
         paySign: payment.paySign || '',
       };
 
-      // 保存 prepay_id 和支付参数到订单，供后续直接调起支付
+      // 保存新 prepay_id，覆盖旧值（prepay_id 有效期 2 小时）
       const prepayId = payment.package.replace('prepay_id=', '');
       await pool.execute(
         'UPDATE orders SET prepay_id = ?, pay_params = ? WHERE id = ?',

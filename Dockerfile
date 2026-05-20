@@ -23,7 +23,7 @@ RUN npm run build
 # ==========================================
 WORKDIR /app
 COPY backend/package.json backend/package-lock.json ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 COPY backend/src/ ./src/
 COPY backend/uploads/ ./uploads/
 

@@ -1,6 +1,6 @@
 const api = require('../../utils/api');
 const { formatPrice, formatDate } = require('../../utils/util');
-const { ensureLogin } = require('../../utils/auth');
+const { checkLogin } = require('../../utils/auth');
 
 Page({
   data: {
@@ -88,7 +88,7 @@ Page({
     const { product, quantity, actionType } = this.data;
     if (!product) return;
 
-    ensureLogin().then(() => {
+    checkLogin().then(() => {
       api.post('/cart', { product_id: product.id, quantity }).then(() => {
         if (actionType === 'buy') {
           wx.navigateTo({ url: `/pages/checkout/index?cartIds=${product.id}_${quantity}_direct` });

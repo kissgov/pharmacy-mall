@@ -1,5 +1,5 @@
 const api = require('../../utils/api');
-const { ensureLogin } = require('../../utils/auth');
+const { checkLogin } = require('../../utils/auth');
 
 Component({
   properties: {
@@ -17,12 +17,11 @@ Component({
       }
     },
 
-    onAddCart(e) {
-      e.stopPropagation();
+    onAddCart() {
       const { id } = this.data.product;
       if (!id) return;
 
-      ensureLogin().then(() => {
+      checkLogin().then(() => {
         api.post('/cart', { product_id: id, quantity: 1 })
           .then(() => {
             wx.showToast({ title: '已加入购物车', icon: 'success', duration: 1200 });

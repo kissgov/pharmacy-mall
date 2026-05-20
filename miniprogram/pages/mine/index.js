@@ -8,7 +8,7 @@ Page({
   },
 
   onShow() {
-    ensureLogin().then((user) => {
+    checkLogin().then((user) => {
       this.setData({ userInfo: user || {} });
       this.loadOrderCounts();
     });

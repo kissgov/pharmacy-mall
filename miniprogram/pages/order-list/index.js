@@ -71,6 +71,7 @@ Page({
 
   onPay(e) {
     const { id } = e.currentTarget.dataset;
+    const that = this;
     api.post('/pay/unified', { order_id: id }).then((payParams) => {
       wx.requestPayment({
         timeStamp: payParams.timeStamp,
@@ -80,8 +81,8 @@ Page({
         paySign: payParams.paySign,
         success() {
           wx.showToast({ title: '支付成功', icon: 'success' });
-          this.loadOrders();
-        }.bind(this),
+          that.loadOrders();
+        },
         fail() {
           wx.showToast({ title: '支付取消', icon: 'none' });
         },

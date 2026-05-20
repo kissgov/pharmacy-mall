@@ -33,6 +33,7 @@ Page({
 
   onPay() {
     const { id } = this.data.order;
+    const that = this;
     api.post('/pay/unified', { order_id: id }).then((payParams) => {
       wx.requestPayment({
         timeStamp: payParams.timeStamp,
@@ -42,8 +43,8 @@ Page({
         paySign: payParams.paySign,
         success() {
           wx.showToast({ title: '支付成功', icon: 'success' });
-          this.loadOrder(id);
-        }.bind(this),
+          that.loadOrder(id);
+        },
         fail() {
           wx.showToast({ title: '支付取消', icon: 'none' });
         },

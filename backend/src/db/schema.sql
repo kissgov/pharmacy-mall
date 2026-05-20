@@ -106,7 +106,9 @@ CREATE TABLE IF NOT EXISTS orders (
   tracking_no VARCHAR(100),
   logistics_company VARCHAR(100),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  prepay_id VARCHAR(64),
+  pay_params TEXT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 订单明细
@@ -188,3 +190,7 @@ CREATE TABLE IF NOT EXISTS banners (
   status VARCHAR(20) DEFAULT 'active',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 迁移：已存在的 orders 表增加 prepay_id 和 pay_params（忽略重复列错误）
+ALTER TABLE orders ADD prepay_id VARCHAR(64);
+ALTER TABLE orders ADD pay_params TEXT;

@@ -72,24 +72,36 @@ Page({
   onPay(e) {
     const { id } = e.currentTarget.dataset;
     const that = this;
-    api.post('/pay/unified', { order_id: id }).then((payParams) => {
+
+    const doPay = (params) => {
       wx.requestPayment({
-        timeStamp: payParams.timeStamp,
-        nonceStr: payParams.nonceStr,
-        package: payParams.package,
-        signType: payParams.signType || 'MD5',
-        paySign: payParams.paySign,
+        timeStamp: params.timeStamp,
+        nonceStr: params.nonceStr,
+        package: params.package,
+        signType: params.signType || 'MD5',
+        paySign: params.paySign,
         success() {
           wx.showToast({ title: '支付成功', icon: 'success' });
           that.loadOrders();
         },
         fail: () => {
-          // ④ 用户取消支付，可重新点击支付
+          // ④ 取消后可再次点击支付
         },
       });
-    }).catch((err) => {
-      wx.showToast({ title: err.message || '支付失败', icon: 'none' });
-    });
+    };
+
+    // 查找订单的已存支付参数
+    const order = this.data.orders.find(o => o.id === id);
+    let payParams = null;
+    try { payParams = order && typeof order.pay_params === 'string' ? JSON.parse(order.pay_params) : (order && order.pay_params); } catch (_) {}
+
+    if (payParams && payParams.package && payParams.package !== 'prepay_id=') {
+      doPay(payParams);
+    } else {
+      api.post('/pay/unified', { order_id: id }).then(doPay).catch((err) => {
+        wx.showToast({ title: err.message || '支付失败', icon: 'none' });
+      });
+    }
   },
 
   onCancel(e) {

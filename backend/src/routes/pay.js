@@ -63,14 +63,23 @@ router.post('/unified', authUser, async (req, res) => {
     // ② 成功 → 返回 wx.requestPayment 所需参数
     if (returnCode === 'SUCCESS' && resultCode === 'SUCCESS' && payment && payment.package && payment.package !== 'prepay_id=') {
       console.log('[支付] 下单成功, prepay_id:', payment.package);
-      return res.json(success({
+
+      const payParams = {
         timeStamp: payment.timeStamp || '',
         nonceStr: payment.nonceStr || '',
         package: payment.package,
         signType: payment.signType || 'MD5',
         paySign: payment.paySign || '',
-        order_no: order.order_no,
-      }, '预下单成功'));
+      };
+
+      // 保存 prepay_id 和支付参数到订单，供后续直接调起支付
+      const prepayId = payment.package.replace('prepay_id=', '');
+      await pool.execute(
+        'UPDATE orders SET prepay_id = ?, pay_params = ? WHERE id = ?',
+        [prepayId, JSON.stringify(payParams), order_id]
+      );
+
+      return res.json(success({ ...payParams, order_no: order.order_no }, '预下单成功'));
     }
 
     // 失败

@@ -5,13 +5,7 @@
   "envParams": {
     "PORT": "3000",
     "JWT_SECRET": "pharmacy_mall_jwt_secret_2024",
-    "MYSQL_HOST": "10.37.112.148",
-    "MYSQL_PORT": "3306",
-    "MYSQL_USER": "root",
-    "MYSQL_PASSWORD": "Smshl2014",
-    "MYSQL_DATABASE": "pharmacy_mall",
-    "COS_BUCKET": "7072-prod-3g07zskv0b1bc5b1-1309632689",
-    "COS_REGION": "ap-shanghai"
+    "MYSQL_DATABASE": "pharmacy_mall"
   },
   "cpu": 0.5,
   "mem": 1,

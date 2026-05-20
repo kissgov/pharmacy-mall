@@ -1,7 +1,11 @@
 # 药店网上商城 - 微信云托管 Dockerfile
 # 后端 API + 管理后台 SPA 合一部署
+# 参考: https://github.com/WeixinCloud/wxcloudrun-express
 
 FROM node:24-alpine
+
+# 腾讯云镜像源加速（参考官方示例）
+RUN npm config set registry https://mirrors.cloud.tencent.com/npm/
 
 WORKDIR /app
 
@@ -26,7 +30,7 @@ COPY backend/uploads/ ./uploads/
 # 管理后台构建产物
 RUN cp -r /app/admin/dist ./admin-dist
 
-# 数据目录（仅 uploads 本地缓存，MySQL 在外部）
+# 上传文件目录（后续迁移到 COS 后可移除）
 RUN mkdir -p uploads/products uploads/prescriptions uploads/banners
 
 EXPOSE 3000

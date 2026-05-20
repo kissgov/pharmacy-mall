@@ -16,6 +16,7 @@ const MCH_ID = process.env.MCH_ID || '1512811311';
 function callPay(action, paybody) {
   const doCall = new Promise((resolve) => {
     const body = JSON.stringify(paybody);
+    console.log(`[支付] 发送请求: POST /_/pay/${action}`, body);
     const req = http.request({
       hostname: 'api.weixin.qq.com',
       path: `/_/pay/${action}`,

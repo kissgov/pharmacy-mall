@@ -19,6 +19,18 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 // 挂载路由
 app.use('/api', require('./routes'));
 
+// 管理后台 SPA 静态资源（生产环境，Docker 构建产物）
+const adminDist = path.join(__dirname, '..', 'admin-dist');
+const fs = require('fs');
+if (fs.existsSync(adminDist)) {
+  app.use(express.static(adminDist));
+  // SPA fallback：所有非 /api /uploads 的路由返回 index.html
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next();
+    res.sendFile(path.join(adminDist, 'index.html'));
+  });
+}
+
 // 全局错误处理中间件（必须放在所有路由之后）
 app.use(errorHandler);
 

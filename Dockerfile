@@ -1,26 +1,33 @@
 # 药店网上商城 - 微信云托管 Dockerfile
-# 运行时: Node.js 24
+# 后端 API + 管理后台 SPA 合一部署
 
 FROM node:24-alpine
 
-# 创建工作目录
 WORKDIR /app
 
-# 只复制后端依赖文件
+# ==========================================
+# 1. 构建管理后台
+# ==========================================
+COPY admin/package.json admin/package-lock.json ./admin/
+WORKDIR /app/admin
+RUN npm ci
+COPY admin/ ./
+RUN npm run build
+
+# ==========================================
+# 2. 后端
+# ==========================================
+WORKDIR /app
 COPY backend/package.json backend/package-lock.json ./
-
-# 安装生产依赖
 RUN npm ci --omit=dev
-
-# 复制后端源码
 COPY backend/src/ ./src/
 COPY backend/uploads/ ./uploads/
 
-# 创建数据目录
+# 管理后台构建产物
+RUN cp -r /app/admin/dist ./admin-dist
+
+# 数据目录
 RUN mkdir -p data uploads/products uploads/prescriptions uploads/banners
 
-# 暴露端口
 EXPOSE 3000
-
-# 启动命令
 CMD ["node", "src/server.js"]

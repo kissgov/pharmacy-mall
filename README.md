@@ -48,12 +48,16 @@ cd admin && npm install && npm run dev
 
 - GitHub: https://github.com/kissgov/pharmacy-mall
 
-### 微信云托管
-- 生产环境: https://pharmary-mall-api-239896-5-1309632689.sh.run.tcloudbase.com
+### 微信云托管（API + 管理后台合一）
+- API: https://pharmary-mall-api-239896-5-1309632689.sh.run.tcloudbase.com/api
+- 管理后台: https://pharmary-mall-api-239896-5-1309632689.sh.run.tcloudbase.com
+- 管理员: admin / admin123
 - 分支 `master`，构建目录 `/`，端口 `3000`
 
 ### Docker 本地运行
 ```bash
 docker build -t pharmacy-mall .
 docker run -p 3000:3000 pharmacy-mall
+# API:    http://localhost:3000/api
+# 管理后台: http://localhost:3000
 ```

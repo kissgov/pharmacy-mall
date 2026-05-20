@@ -3,17 +3,8 @@ const path = require('path');
 const mysql = require('mysql2/promise');
 const config = require('./config');
 
-// 确保必要的目录存在
-const uploadsDir = path.resolve(__dirname, '..', 'uploads');
-
-[uploadsDir].forEach((dir) => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-    console.log('创建目录: ' + dir);
-  }
-});
-
-/**
+// 初始化 COS（云托管环境自动获取临时凭证）
+const { initCOS } = require('./utils/cos');
  * 初始化数据库：创建数据库（如不存在）、执行建表 SQL、填充种子数据
  */
 async function initDatabase() {

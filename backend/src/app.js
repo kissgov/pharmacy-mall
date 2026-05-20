@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -12,21 +13,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 静态资源服务（上传文件访问）
-// 挂载到 /uploads 前缀，保持与数据库存储路径一致
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
-
 // 挂载路由
 app.use('/api', require('./routes'));
 
 // 管理后台 SPA 静态资源（生产环境，Docker 构建产物）
 const adminDist = path.join(__dirname, '..', 'admin-dist');
-const fs = require('fs');
 if (fs.existsSync(adminDist)) {
   app.use(express.static(adminDist));
-  // SPA fallback：所有非 /api /uploads 的路由返回 index.html
+  // SPA fallback：所有非 /api 的路由返回 index.html
   app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next();
+    if (req.path.startsWith('/api')) return next();
     res.sendFile(path.join(adminDist, 'index.html'));
   });
 }

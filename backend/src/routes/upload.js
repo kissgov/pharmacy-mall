@@ -1,13 +1,12 @@
 /**
- * 图片上传路由
- * POST /api/upload — 上传图片（本地临时 → COS 存储 → 返回公网 URL）
+ * 图片上传路由（纯 COS 对象存储，无本地磁盘依赖）
+ * POST /api/upload — 上传图片 → COS → 返回 CDN URL
  */
 const { Router } = require('express');
 const fs = require('fs');
-const path = require('path');
 const { authOptional } = require('../middleware/auth');
 const upload = require('../middleware/upload');
-const { uploadFile, getCOSUrl } = require('../utils/cos');
+const { uploadFile } = require('../utils/cos');
 const { success, error } = require('../utils/response');
 
 const router = Router();
@@ -40,19 +39,10 @@ router.post('/', authOptional, (req, res) => {
     try { fs.unlinkSync(localPath); } catch (_) { /* ignore */ }
 
     if (cosUrl) {
-      return res.json(success({ url: cosUrl, filename: req.file.filename }, '上传成功'));
+      return res.json(success({ url: cosUrl }, '上传成功'));
     }
 
-    // COS 不可用时回退到本地路径
-    const localUrl = `/uploads/${type}/${req.file.filename}`;
-    // 将文件移回永久目录
-    const permDir = path.join(__dirname, '..', '..', 'uploads', type);
-    const permPath = path.join(permDir, req.file.filename);
-    try {
-      if (!fs.existsSync(permDir)) fs.mkdirSync(permDir, { recursive: true });
-      fs.renameSync(localPath, permPath);
-    } catch (_) { /* ignore */ }
-    res.json(success({ url: localUrl, filename: req.file.filename }, '上传成功'));
+    return res.json(error(500, '上传到云存储失败，请稍后重试'));
   });
 });
 

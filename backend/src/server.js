@@ -40,8 +40,8 @@ async function initDatabase() {
       try {
         await pool.execute(stmt);
       } catch (err) {
-        // 忽略已存在的表和重复键错误
-        if (err.code !== 'ER_TABLE_EXISTS_ERROR' && err.code !== 'ER_DUP_KEYNAME') {
+        // 忽略已存在的表/列/键错误
+        if (err.code !== 'ER_TABLE_EXISTS_ERROR' && err.code !== 'ER_DUP_KEYNAME' && err.code !== 'ER_DUP_FIELDNAME') {
           console.error('SQL 执行错误:', err.message);
         }
       }

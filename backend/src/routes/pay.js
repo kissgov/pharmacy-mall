@@ -70,6 +70,7 @@ router.post('/unified', authUser, async (req, res) => {
         package: payment.package,
         signType: payment.signType || 'MD5',
         paySign: payment.paySign || '',
+        savedAt: Date.now(),  // 用于前端判断 2 小时过期
       };
 
       // 保存新 prepay_id，覆盖旧值（prepay_id 有效期 2 小时）

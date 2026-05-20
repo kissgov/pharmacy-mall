@@ -72,21 +72,42 @@ Page({
   onPay(e) {
     const { id } = e.currentTarget.dataset;
     const that = this;
-    // 每次重试都重新调 JSAPI 下单获取新 prepay_id（官方要求）
-    api.post('/pay/unified', { order_id: id }).then((payParams) => {
+
+    const doPay = (params) => {
       wx.requestPayment({
-        timeStamp: payParams.timeStamp,
-        nonceStr: payParams.nonceStr,
-        package: payParams.package,
-        signType: payParams.signType || 'MD5',
-        paySign: payParams.paySign,
+        timeStamp: params.timeStamp,
+        nonceStr: params.nonceStr,
+        package: params.package,
+        signType: params.signType || 'MD5',
+        paySign: params.paySign,
         success() {
           wx.showToast({ title: '支付成功', icon: 'success' });
           that.loadOrders();
         },
         fail: () => {},
       });
-    }).catch((err) => {
+    };
+
+    // 查找订单的已存支付参数
+    const order = this.data.orders.find(o => o.id === id);
+    let savedParams = null;
+    try {
+      if (order && order.pay_params) {
+        savedParams = typeof order.pay_params === 'string'
+          ? JSON.parse(order.pay_params) : order.pay_params;
+      }
+    } catch (_) {}
+
+    // 已存 prepay_id 且未过期（2小时）→ 直接复用
+    if (savedParams && savedParams.package && savedParams.package !== 'prepay_id=' && savedParams.savedAt) {
+      const ageMs = Date.now() - savedParams.savedAt;
+      if (ageMs < 2 * 60 * 60 * 1000) {
+        return doPay(savedParams);
+      }
+    }
+
+    // 无已存参数或已过期 → 重新下单
+    api.post('/pay/unified', { order_id: id }).then(doPay).catch((err) => {
       wx.showToast({ title: err.message || '支付失败', icon: 'none' });
     });
   },

@@ -166,7 +166,7 @@ export default function ProductEdit() {
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                 {form.images.map((img, i) => (
                   <Box key={i} sx={{ position: 'relative', width: 80, height: 80 }}>
-                    <img src={img} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8 }} />
+                    <img src={img} alt="" onError={(e) => { e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect fill="%23f5f5f5" width="80" height="80"/><text x="40" y="52" text-anchor="middle" font-size="32">💊</text></svg>'; }} style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8 }} />
                     <IconButton size="small" sx={{ position: 'absolute', top: -8, right: -8, bgcolor: '#fff' }} onClick={() => handleRemoveImage(i)}>
                       <DeleteIcon fontSize="small" color="error" />
                     </IconButton>

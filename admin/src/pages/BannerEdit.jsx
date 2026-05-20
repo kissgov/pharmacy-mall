@@ -84,7 +84,7 @@ export default function BannerEdit() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 {imagePreview ? (
                   <Box sx={{ position: 'relative' }}>
-                    <img src={imagePreview} alt="" style={{ width: 300, height: 140, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }} />
+                    <img src={imagePreview} alt="" onError={(e) => { e.target.style.display = 'none'; }} style={{ width: 300, height: 140, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }} />
                   </Box>
                 ) : (
                   <Box sx={{ width: 300, height: 140, bgcolor: '#f5f5f5', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

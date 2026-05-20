@@ -103,7 +103,8 @@ export default function OrderDetail() {
                 <TableRow key={item.id}>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {item.product_image && <img src={item.product_image} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover' }} />}
+                      <Box sx={{ width: 48, height: 48, borderRadius: 1, bgcolor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>📦</Box>
+                      {item.product_image && <img src={item.product_image} alt="" onError={(e) => { e.target.style.display = 'none'; }} style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />}
                       <Typography variant="body2">{item.product_name}</Typography>
                     </Box>
                   </TableCell>

@@ -71,9 +71,23 @@ Page({
 
   onPay(e) {
     const { id } = e.currentTarget.dataset;
-    api.put(`/orders/${id}/pay`).then(() => {
-      wx.showToast({ title: '支付成功', icon: 'success' });
-      this.loadOrders();
+    api.post('/pay/unified', { order_id: id }).then((payParams) => {
+      wx.requestPayment({
+        timeStamp: payParams.timeStamp,
+        nonceStr: payParams.nonceStr,
+        package: payParams.package,
+        signType: payParams.signType || 'MD5',
+        paySign: payParams.paySign,
+        success() {
+          wx.showToast({ title: '支付成功', icon: 'success' });
+          this.loadOrders();
+        }.bind(this),
+        fail() {
+          wx.showToast({ title: '支付取消', icon: 'none' });
+        },
+      });
+    }).catch((err) => {
+      wx.showToast({ title: err.message || '支付失败', icon: 'none' });
     });
   },
 

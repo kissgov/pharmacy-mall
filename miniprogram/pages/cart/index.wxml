@@ -25,7 +25,7 @@
   <!-- 底栏 -->
   <view wx:if="{{items.length}}" class="bottom-bar">
     <view class="select-all" bindtap="onToggleAll">
-      <image src="{{allChecked ? '/assets/checked.png' : '/assets/unchecked.png'}}" class="check-icon" />
+      <text class="check-icon">{{allChecked ? '✅' : '⬜'}}</text>
       <text>全选</text>
     </view>
     <block wx:if="{{!editMode}}">

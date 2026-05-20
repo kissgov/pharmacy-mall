@@ -40,7 +40,8 @@
     <view wx:if="{{reviews.length}}">
       <view class="review-item" wx:for="{{reviews}}" wx:key="id">
         <view class="review-header">
-          <image class="avatar" src="{{item.avatar_url || '/assets/default-avatar.png'}}" mode="aspectFill" />
+          <image wx:if="{{item.avatar_url}}" class="avatar" src="{{item.avatar_url}}" mode="aspectFill" />
+          <view wx:else class="avatar-default">👤</view>
           <text class="nickname">{{item.nickname || '匿名用户'}}</text>
           <view class="stars">
             <text wx:for="{{item.rating}}" wx:key="*this">⭐</text>

@@ -1,5 +1,5 @@
 const api = require('../../utils/api');
-const { ensureLogin } = require('../../utils/auth');
+const { checkLogin } = require('../../utils/auth');
 
 Page({
   data: {

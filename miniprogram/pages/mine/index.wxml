@@ -1,7 +1,8 @@
 <view class="page">
   <!-- 用户信息 -->
   <view class="user-card">
-    <image class="avatar" src="{{userInfo.avatar_url || '/assets/default-avatar.png'}}" mode="aspectFill" />
+    <image wx:if="{{userInfo.avatar_url}}" class="avatar" src="{{userInfo.avatar_url}}" mode="aspectFill" />
+    <view wx:else class="avatar-default">👤</view>
     <view class="user-info">
       <text class="nickname">{{userInfo.nickname || '未登录'}}</text>
       <text class="level">{{userInfo.member_level === 'normal' ? '普通会员' : userInfo.member_level}}</text>

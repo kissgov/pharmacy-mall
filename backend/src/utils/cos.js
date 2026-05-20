@@ -96,6 +96,7 @@ async function uploadFile(cloudPath, localPath) {
       Bucket: cosConfig.Bucket,
       Region: cosConfig.Region,
       Key: cloudPath,
+      ACL: 'public-read',
       StorageClass: 'STANDARD',
       Body: fs.createReadStream(localPath),
       ContentLength: fs.statSync(localPath).size,
